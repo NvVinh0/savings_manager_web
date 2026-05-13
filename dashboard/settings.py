@@ -100,10 +100,8 @@ AUTH_USER_MODEL = 'users.CustomUser'
 # django-allauth settings
 SITE_ID = 1
 ACCOUNT_LOGIN_METHODS = {'email'}
-ACCOUNT_EMAIL_REQUIRED = True
-ACCOUNT_USERNAME_REQUIRED = False
+ACCOUNT_SIGNUP_FIELDS = ['email*', 'username*', 'password1*', 'password2*']
 ACCOUNT_EMAIL_VERIFICATION = 'none' # For development
-ACCOUNT_USER_MODEL_USERNAME_FIELD = None
 LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = '/'
 
