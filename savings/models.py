@@ -35,7 +35,7 @@ class SavingAccount(models.Model):
     maturity_date = models.DateField(null=True, blank=True)  # allow null for non-fixed-term accounts
 
     saving_type = models.ForeignKey(SavingType, on_delete=models.PROTECT, related_name="accounts")
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='saving_accounts')
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='saving_accounts')
 
     def deposit(self, amount):
         self.balance += amount
@@ -63,7 +63,7 @@ class Transaction(models.Model):
     balance_after = models.DecimalField(max_digits=12, decimal_places=2)
     timestamp = models.DateTimeField(auto_now_add=True)
 
-    account = models.ForeignKey(SavingAccount, on_delete=models.SET_NULL, related_name='transactions')
+    account = models.ForeignKey(SavingAccount, null=True, on_delete=models.SET_NULL, related_name='transactions')
 
     def __str__(self):
         return f"{self.transaction_type}: {self.amount} on {self.timestamp}"
