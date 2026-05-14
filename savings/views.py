@@ -1,3 +1,4 @@
 from django.shortcuts import render
 
-# Create your views here.
+def saving_accounts(request):
+    return render(request, "savings/saving_accounts.html")
