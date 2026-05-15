@@ -20,7 +20,7 @@
             {% if user.is_authenticated %}
                 {{ user.email }}
             {% else %}
-                <a href="{% url 'account_login' %}" class="nav-button">Login</a>
+                <a href="{% url 'account_login' %}" class="nav-login">Login</a>
             {% endif %}
         </div>
     </div>

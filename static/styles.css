@@ -37,6 +37,18 @@ body {
     background-color: #34495e;
 }
 
+.nav-login {
+    border: 1px solid white;
+    padding: 6px 12px;
+    border-radius: 6px;
+    text-decoration: none;
+    color: white;
+}
+
+.nav-login:hover {
+    background-color: #34495e;
+}
+
 .right-section {
     font-size: 14px;
 }
