@@ -12,13 +12,20 @@
 <body>
     <div class="topbar">
         <div class="left-section">
-            <a href="{% url 'dashboard' %}" class="app-name">Saving Account Manager</a>
+            <a href="{% url 'profile' %}" class="app-name">Saving Account Manager</a>
             <a href="{% url 'saving_accounts' %}" class="nav-button">Savings</a>
         </div>
 
         <div class="right-section">
             {% if user.is_authenticated %}
-                {{ user.email }}
+                <div class="user-menu">
+                    <a href="#" class="nav-login">{{ user.email }}</a>
+
+                    <div class="dropdown">
+                        <a href="#">Profile</a>
+                        <a href="{% url 'account_logout' %}">Logout</a>
+                    </div>
+                </div>
             {% else %}
                 <a href="{% url 'account_login' %}" class="nav-login">Login</a>
             {% endif %}
