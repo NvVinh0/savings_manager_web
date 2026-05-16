@@ -1,10 +1,102 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Saving Accounts</title>
-</head>
-<body>
+{% extends "base.html" %}
 
-</body>
-</html>
+{% block title %}Savings{% endblock %}
+
+{% block content %}
+<h2>Savings Management</h2>
+
+{% if messages %}
+  {% for message in messages %}
+    <div class="flash {{ message.tags }}">{{ message }}</div>
+  {% endfor %}
+{% endif %}
+
+<div class="grid">
+  <section class="card">
+    <h3>Create Saving Account</h3>
+    <form method="post">
+      {% csrf_token %}
+      <input type="hidden" name="form_type" value="create">
+      {{ create_form.as_p }}
+      <button type="submit">Create</button>
+    </form>
+  </section>
+
+  <section class="card">
+    <h3>Deposit</h3>
+    <form method="post">
+      {% csrf_token %}
+      <input type="hidden" name="form_type" value="deposit">
+      {{ deposit_form.as_p }}
+      <button type="submit">Deposit</button>
+    </form>
+  </section>
+
+  <section class="card">
+    <h3>Withdraw</h3>
+    <form method="post">
+      {% csrf_token %}
+      <input type="hidden" name="form_type" value="withdraw">
+      {{ withdraw_form.as_p }}
+      <button type="submit">Withdraw</button>
+    </form>
+  </section>
+</div>
+
+<section class="card">
+  <h3>Saving Types</h3>
+  <table class="accounts-table">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Interest Rate</th>
+        <th>Duration (months)</th>
+        <th>Flexible</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for st in saving_types %}
+      <tr>
+        <td>{{ st.name }}</td>
+        <td>{{ st.interest_rate }}%</td>
+        <td>{{ st.duration_months|default:"Unlimited" }}</td>
+        <td>{% if st.is_flexible %}Yes{% else %}No{% endif %}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="4">No active saving types.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+
+<section class="card">
+  <h3>Your Saving Accounts</h3>
+  <table class="accounts-table">
+    <thead>
+      <tr>
+        <th>Account No.</th>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Balance</th>
+        <th>Interest</th>
+        <th>Maturity</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for account in accounts %}
+      <tr>
+        <td>{{ account.account_number }}</td>
+        <td>{{ account.name }}</td>
+        <td>{{ account.saving_type.name }}</td>
+        <td>{{ account.balance }}</td>
+        <td>{{ account.interest_rate }}%</td>
+        <td>{{ account.maturity_date|default:"-" }}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="6">No saving accounts yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+
+{% endblock %}

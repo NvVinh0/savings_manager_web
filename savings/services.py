@@ -1,11 +1,19 @@
 from django.db import transaction
 from decimal import Decimal
+from datetime import date
 
 from django.db.models import QuerySet
 from django.utils.timezone import now
 
-from savings.models import SavingAccount, SavingType, Transaction
+from savings.models import SavingAccount, SavingType, SavingTypeRateHistory, Transaction
 from users.models import CustomUser
+
+def _add_months(d: date, months: int) -> date:
+    year = d.year + (d.month - 1 + months) // 12
+    month = (d.month - 1 + months) % 12 + 1
+    # keep safe day in target month
+    day = min(d.day, [31, 29 if year % 4 == 0 and (year % 100 != 0 or year % 400 == 0) else 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][month - 1])
+    return date(year, month, day)
 
 def get_all_accounts():
     return SavingAccount.objects.all()
@@ -17,9 +25,16 @@ def create_account(
     if balance < 1_000_000:
         raise ValueError("Minimum balance is 1,000,000")
 
+    maturity_date = None
+    if not saving_type.is_flexible and saving_type.duration_months:
+        maturity_date = _add_months(now().date(), saving_type.duration_months)
+
     account = SavingAccount.objects.create(
         name=name, citizen_id=citizen_id, address=address, balance=balance,
         interest_rate=saving_type.interest_rate,
+        # Start accrual tracking on account creation date for flexible accounts.
+        interest_last_applied_on=now().date() if saving_type.is_flexible else None,
+        maturity_date=maturity_date,
         saving_type=saving_type, user=user)
     return account
 
@@ -44,12 +59,16 @@ def deposit_to_account(account: SavingAccount, amount: Decimal):
         today = now().date()
 
         if not account.saving_type.is_flexible:
+            if account.maturity_date is None:
+                raise ValueError("Fixed-term account is missing maturity date")
             if today != account.maturity_date:
                 raise ValueError("Deposit only allowed on maturity date for fixed-term saving types")
         else:
+            # For flexible accounts, accrue pending interest first (using rate history).
             apply_interest(account)
+        balance_before = account.balance
 
-        account.balance += amount
+        account.balance = balance_before + amount
         account.save(update_fields=["balance"])
 
         Transaction.objects.create(
@@ -57,7 +76,9 @@ def deposit_to_account(account: SavingAccount, amount: Decimal):
             account_number=account.account_number,
             name=account.name,
             transaction_type='DEPOSIT',
-            amount=amount
+            balance_before=balance_before,
+            amount=amount,
+            balance_after=account.balance
         )
 
 def withdraw_from_account(account: SavingAccount, amount: Decimal) -> Decimal:
@@ -72,6 +93,8 @@ def withdraw_from_account(account: SavingAccount, amount: Decimal) -> Decimal:
         today = now().date()
 
         if not account.saving_type.is_flexible: # fixed-term
+            if account.maturity_date is None:
+                raise ValueError("Fixed-term account is missing maturity date")
             if today < account.maturity_date:
                 raise ValueError("Cannot withdraw before maturity")
 
@@ -119,7 +142,69 @@ def withdraw_from_account(account: SavingAccount, amount: Decimal) -> Decimal:
             return amount
 
 def apply_interest(account: SavingAccount):
-    return account.balance * account.interest_rate / 100 # subjected to change
+    # Fixed-term: estimate payout as principal + simple interest.
+    if not account.saving_type.is_flexible:
+        return account.balance + (account.balance * account.interest_rate / 100)
+
+    today = now().date()
+    from_date = account.interest_last_applied_on or account.start_date
+
+    # Nothing to accrue if we've already applied through today.
+    if from_date >= today:
+        return account.balance
+
+    # Pull all historical rate windows that may overlap the accrual range.
+    histories = SavingTypeRateHistory.objects.filter(
+        saving_type=account.saving_type,
+        effective_from__lt=today
+    ).order_by("effective_from")
+
+    interest = Decimal("0")
+
+    if histories.exists():
+        for h in histories:
+            seg_start = max(from_date, h.effective_from)
+            seg_end = min(today, h.effective_to or today)
+            if seg_end <= seg_start:
+                continue
+
+            days = (seg_end - seg_start).days
+            # Simple daily interest, annualized by 365 days.
+            interest += account.balance * (h.interest_rate / Decimal("100")) * (Decimal(days) / Decimal("365"))
+    else:
+        # Backward compatibility when no history rows exist yet.
+        days = (today - from_date).days
+        interest += account.balance * (account.interest_rate / Decimal("100")) * (Decimal(days) / Decimal("365"))
+
+    account.balance += interest
+    account.interest_last_applied_on = today
+    # Keep the account snapshot in sync with current saving type display rate.
+    account.interest_rate = account.saving_type.interest_rate
+    account.save(update_fields=["balance", "interest_last_applied_on", "interest_rate"])
+    return account.balance
+
+
+def change_saving_type_rate(saving_type: SavingType, new_rate: Decimal, effective_from: date | None = None) -> SavingType:
+    # Helper to safely change rate while preserving history windows.
+    effective_from = effective_from or now().date()
+
+    with transaction.atomic():
+        SavingTypeRateHistory.objects.filter(
+            saving_type=saving_type,
+            effective_to__isnull=True
+        ).update(effective_to=effective_from)
+
+        SavingTypeRateHistory.objects.create(
+            saving_type=saving_type,
+            interest_rate=new_rate,
+            effective_from=effective_from,
+            effective_to=None
+        )
+
+        saving_type.interest_rate = new_rate
+        saving_type.save(update_fields=["interest_rate"])
+
+    return saving_type
 
 def close_account(account: SavingAccount):
     return account.delete()
