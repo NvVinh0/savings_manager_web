@@ -1,6 +1,10 @@
+{% load static %}
 {% extends "base.html" %}
 
 {% block title %}Savings{% endblock %}
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'savings.css' %}">
+{% endblock %}
 
 {% block content %}
 <h2>Savings Management</h2>
