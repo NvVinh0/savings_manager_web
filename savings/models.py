@@ -72,9 +72,6 @@ class SavingAccount(models.Model):
         default=generate_account_number,
         editable=False
     )
-    name = models.CharField(max_length=50)  # account holder's name'
-    citizen_id = models.CharField(max_length=12)
-    address = models.CharField(max_length=100)
     balance = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
     created_at = models.DateTimeField(auto_now_add=True)
     is_active = models.BooleanField(default=True)
