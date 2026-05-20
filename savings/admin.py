@@ -7,7 +7,8 @@ class SavingAdmin(admin.ModelAdmin):
 
 @admin.register(SavingAccount)
 class SavingAdmin(admin.ModelAdmin):
-    list_display = ("user", "saving_type", "name", "citizen_id", "address", "balance", "created_at", "interest_rate", "start_date", "maturity_date", "interest_last_applied_on")
+    list_display = ("saving_type", "balance", "created_at", "interest_rate", "start_date", "maturity_date", "interest_last_applied_on")
+    list_select_related = ("user", "saving_type")
 
 @admin.register(SavingTypeRateHistory)
 class SavingRateHistoryAdmin(admin.ModelAdmin):
@@ -15,4 +16,5 @@ class SavingRateHistoryAdmin(admin.ModelAdmin):
 
 @admin.register(Transaction)
 class SavingAdmin(admin.ModelAdmin):
-    list_display = ("account_number", "name", "transaction_type", "balance_before", "amount", "balance_after", "timestamp")
+    list_display = ("transaction_type", "balance_before", "amount", "balance_after", "timestamp")
+    list_select_related = ("account", "user")
