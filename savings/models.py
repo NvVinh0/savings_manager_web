@@ -103,7 +103,7 @@ class SavingAccount(models.Model):
         self.save()
 
     def __str__(self):
-        return f"{self.account_number} - {self.name}"
+        return f"{self.account_number} - {self.user.full_name}"
 
 class TransactionType(models.TextChoices):
     OPEN = "OPEN", "Account Opening"
