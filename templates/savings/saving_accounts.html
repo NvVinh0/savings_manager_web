@@ -1,5 +1,5 @@
-{% load static %}
 {% extends "base.html" %}
+{% load static %}
 
 {% block title %}Savings{% endblock %}
 {% block extra_css %}
@@ -16,6 +16,7 @@
 {% endif %}
 
 <div class="grid">
+
   <section class="card">
     <h3>Create Saving Account</h3>
     <form method="post">
@@ -45,7 +46,120 @@
       <button type="submit">Withdraw</button>
     </form>
   </section>
+
 </div>
+
+<section class="card">
+  <h3>Statistics Report</h3>
+
+  <form method="post">
+    {% csrf_token %}
+    <input type="hidden" name="form_type" value="statistics">
+
+    <!-- PERIOD -->
+    <div class="field">
+      <label>Period</label>
+      {{ report_form.period_type }}
+    </div>
+
+    <!-- ACCOUNT -->
+    <div class="field">
+      <label>Account</label>
+      {{ report_form.account }}
+    </div>
+
+    <!-- DAY -->
+    <div id="day-field" class="field">
+      <label>Date</label>
+      {{ report_form.date }}
+    </div>
+
+    <!-- MONTH -->
+    <div id="month-field" class="field" style="display:none;">
+      <label>Month</label>
+      <input type="month" name="month">
+    </div>
+
+    <!-- YEAR -->
+    <div id="year-field" class="field" style="display:none;">
+      <label>Year</label>
+      <select name="year">
+        <option value="2024">2024</option>
+        <option value="2025">2025</option>
+        <option value="2026">2026</option>
+      </select>
+    </div>
+
+    <button type="submit" class="btn">Generate Report</button>
+  </form>
+
+  {% if statistics %}
+  <div class="report-box">
+
+    <h4 class="report-title">
+      {{ statistics.label }}
+    </h4>
+
+    <div class="report-row">
+      <span>Account No:</span>
+      <b>{{ statistics.account_number }}</b>
+    </div>
+
+    <div class="report-row">
+      <span>Name:</span>
+      <b>{{ statistics.account_name }}</b>
+    </div>
+
+    <div class="report-row income">
+      <span>Income:</span>
+      <b>{{ statistics.total_income }}</b>
+    </div>
+
+    <div class="report-row expense">
+      <span>Expense:</span>
+      <b>{{ statistics.total_expense }}</b>
+    </div>
+
+    <div class="report-row total">
+      <span>Difference:</span>
+      <b>{{ statistics.difference }}</b>
+    </div>
+
+  </div>
+  {% endif %}
+</section>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+    const period = document.querySelector("select[name='period_type']");
+
+    const day = document.getElementById("day-field");
+    const month = document.getElementById("month-field");
+    const year = document.getElementById("year-field");
+
+    function updateUI() {
+        const value = period.value;
+
+        day.style.display = "none";
+        month.style.display = "none";
+        year.style.display = "none";
+
+        if (value === "day") {
+            day.style.display = "block";
+        }
+        else if (value === "month") {
+            month.style.display = "block";
+        }
+        else if (value === "year") {
+            year.style.display = "block";
+        }
+    }
+
+    period.addEventListener("change", updateUI);
+    updateUI();
+});
+</script>
 
 <section class="card">
   <h3>Saving Types</h3>

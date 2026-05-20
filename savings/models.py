@@ -117,5 +117,5 @@ class Transaction(models.Model):
 
     account = models.ForeignKey(SavingAccount, null=True, on_delete=models.SET_NULL, related_name='transactions')
 
-    def __str__(self):
+    def __str__(self):  
         return f"{self.transaction_type}: {self.amount} on {self.timestamp}"

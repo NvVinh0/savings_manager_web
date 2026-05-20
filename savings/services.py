@@ -1,7 +1,9 @@
 from django.db import transaction
 from decimal import Decimal
 from datetime import date
-
+from django.db.models import Sum
+from django.utils.timezone import now
+from savings.models import Transaction
 from django.db.models import QuerySet
 from django.utils.timezone import now
 
@@ -208,3 +210,44 @@ def change_saving_type_rate(saving_type: SavingType, new_rate: Decimal, effectiv
 
 def close_account(account: SavingAccount):
     return account.delete()
+
+def get_statistics(period, date, account, month=None, year=None):
+    qs = Transaction.objects.filter(account=account)
+    
+    if period == "day":
+        if date:
+            qs = qs.filter(timestamp__date=date)
+    elif period == "month":
+        if month:
+            try:
+                year_val, month_val = month.split("-")
+                qs = qs.filter(timestamp__year=int(year_val), timestamp__month=int(month_val))
+            except ValueError:
+                pass
+    elif period == "year":
+        if year:
+            qs = qs.filter(timestamp__year=int(year))
+
+    total_income = qs.filter(transaction_type__in=["OPEN", "DEPOSIT"]).aggregate(total=Sum("amount"))["total"] or Decimal("0")
+    total_expense = qs.filter(transaction_type__in=["WITHDRAW", "CLOSE"]).aggregate(total=Sum("amount"))["total"] or Decimal("0")
+
+    if period == "day":
+        label = str(date) if date else "N/A"
+
+    elif period == "month":
+        label = month if month else "N/A"
+
+    elif period == "year":
+        label = str(year) if year else "N/A"
+
+    else:
+        label = "N/A"
+
+    return {
+        "label": label,
+        "account_number": account.account_number,
+        "account_name": account.name,
+        "total_income": total_income,
+        "total_expense": total_expense,
+        "difference": total_income - total_expense
+    }

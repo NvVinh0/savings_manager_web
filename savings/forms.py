@@ -37,3 +37,14 @@ class WithdrawForm(forms.Form):
         super().__init__(*args, **kwargs)
         if accounts_qs is not None:
             self.fields["account"].queryset = accounts_qs
+
+class ReportForm(forms.Form):
+    PERIOD_CHOICES = [("day", "By Day"), ("month", "By Month"),("year", "By Year")]
+    period_type = forms.ChoiceField(choices=PERIOD_CHOICES)
+    account = forms.ModelChoiceField(queryset=SavingAccount.objects.none(), empty_label="Select account")
+    date = forms.DateField(required=False,widget=forms.DateInput(attrs={"type": "date"}))
+
+    def __init__(self, *args, accounts_qs=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        if accounts_qs is not None:
+            self.fields["account"].queryset = accounts_qs
