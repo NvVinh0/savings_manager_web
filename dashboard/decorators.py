@@ -5,7 +5,7 @@ def customer_required(view_func):
         if not request.user.is_authenticated:
             return redirect("/login")
 
-        if not hasattr(request.user, "customer"):
+        if not request.user.is_customer:
             return redirect("/admin")
 
         return view_func(request, *args, **kwargs)
@@ -17,7 +17,7 @@ def employee_required(view_func):
         if not request.user.is_authenticated:
             return redirect("/login")
 
-        if not hasattr(request.user, "employee"):
+        if not request.user.is_employee:
             return redirect("/profile")
 
         return view_func(request, *args, **kwargs)

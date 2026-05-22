@@ -17,6 +17,14 @@ class CustomUser(AbstractUser):
 
     objects = CustomUserManager()
 
+    @property
+    def is_customer(self):
+        return hasattr(self, "customer")
+
+    @property
+    def is_employee(self):
+        return hasattr(self, "employee")
+
     def __str__(self):
         return self.email
 
