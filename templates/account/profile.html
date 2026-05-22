@@ -9,11 +9,9 @@
 
 {% block content %}
 
-{% if messages %}
+{% if message_success %}
 <div class="messages">
-    {% for message in messages %}
-    <div class="message {{ message.tags }}">{{ message }}</div>
-    {% endfor %}
+    <div class="message success">{{ message_success }}</div>
 </div>
 {% endif %}
 

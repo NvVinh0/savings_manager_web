@@ -2,7 +2,6 @@ from django.shortcuts import render, redirect
 from django.contrib.auth.forms import PasswordChangeForm
 from django.contrib.auth import update_session_auth_hash
 from users.forms import InformationChangeForm, EmailChangeForm
-from django.contrib import messages
 
 from .decorators import customer_required
 from .utils import read_session_errors
@@ -15,7 +14,7 @@ def profile(request):
                 information_form = InformationChangeForm(request.POST, instance=request.user.customer)
                 if information_form.is_valid():
                     information_form.save()
-                    messages.success(request, "Information updated successfully.")
+                    request.session["message_success"] = "Information updated successfully."
                 else:
                     request.session["info_errors"] = information_form.errors
             case "password":
@@ -23,7 +22,7 @@ def profile(request):
 
                 if password_form.is_valid():
                     user = password_form.save()
-                    messages.success(request, "Password updated successfully.")
+                    request.session["message_success"] = "Password updated successfully."
                     update_session_auth_hash(request, user)
                 else:
                     request.session["password_errors"] = password_form.errors
@@ -32,7 +31,7 @@ def profile(request):
 
                 if email_form.is_valid():
                     email_form.save()
-                    messages.success(request, "Email updated successfully.")
+                    request.session["message_success"] = "Email updated successfully."
                 else:
                     request.session["email_errors"] = email_form.errors
 
@@ -51,4 +50,5 @@ def profile(request):
         "information_form": information_form,
         "password_form": password_form,
         "email_form": email_form,
+        "message_success": request.session.pop("message_success", None)
     })
