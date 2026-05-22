@@ -1,0 +1,113 @@
+.page-header {
+    margin-bottom: 24px;
+}
+
+.page-header h1 {
+    margin: 0 0 6px;
+    font-size: 32px;
+    font-weight: 700;
+}
+
+.page-header p {
+    margin: 0;
+    color: #6b7280;
+}
+
+.card {
+    padding: 24px;
+    background: white;
+    border-radius: 16px;
+    border: 1px solid #e5e7eb;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+    margin-bottom: 24px;
+}
+
+.search-form {
+    display: flex;
+    gap: 14px;
+}
+
+.search-form input,
+.search-form select {
+    padding: 12px 14px;
+    border-radius: 10px;
+    border: 1px solid #d1d5db;
+    font-size: 14px;
+}
+
+.search-form input {
+    flex: 1;
+}
+
+.search-form button {
+    padding: 12px 18px;
+    border: none;
+    border-radius: 10px;
+    background: #2563eb;
+    color: white;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.users-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.users-table th {
+    padding: 14px;
+    text-align: left;
+    font-size: 14px;
+    font-weight: 600;
+    color: #6b7280;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.users-table td {
+    padding: 16px 14px;
+    border-bottom: 1px solid #f3f4f6;
+}
+
+.users-table td:nth-child(2),
+.users-table td:nth-child(3),
+.users-table td:nth-child(4),
+.users-table th:nth-child(2),
+.users-table th:nth-child(3),
+.users-table th:nth-child(4){
+    text-align: center;
+}
+
+.badge {
+    display: inline-flex;
+    padding: 6px 12px;
+    border-radius: 999px;
+    background: #e5e7eb;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.badge.employee {
+    background: #dbeafe;
+    color: #1d4ed8;
+}
+
+.actions {
+    text-align: right;
+}
+
+.action-button {
+    display: inline-flex;
+    padding: 10px 14px;
+    border-radius: 10px;
+    background: #2563eb;
+    color: white;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.empty-state {
+    text-align: center;
+    color: #6b7280;
+    padding: 40px 0 !important;
+}
