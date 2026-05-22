@@ -3,7 +3,7 @@ from django.shortcuts import render
 def employee_dashboard(request):
     pass
 
-def manage_customer(request):
+def manage_users(request):
     pass
 
 def manage_staffs(request):
