@@ -1,7 +1,6 @@
 from decimal import Decimal
 
 from django.contrib import messages
-from django.contrib.auth.decorators import login_required
 from django.shortcuts import redirect, render
 
 from dashboard.decorators import customer_required

@@ -51,10 +51,12 @@ INSTALLED_APPS = [
     # Custom Apps
     'users',
     'savings',
+    'employees',
 
     # Auth
     'allauth',
     'allauth.account',
+    'employees.apps.EmployeeConfig'
 ]
 
 MIDDLEWARE = [

@@ -24,9 +24,9 @@
                     <div class="dropdown">
                         <a href="#">Profile</a>
                         {% if user.is_staff %}
-                        <a href="{% url 'admin:index' %}">Admin</a>
                         {% endif %}
                         <a href="{% url 'account_logout' %}">Logout</a>
+                        <a href="{% url 'employee_index' %}">Employee Page</a>
                     </div>
                 </div>
             {% else %}

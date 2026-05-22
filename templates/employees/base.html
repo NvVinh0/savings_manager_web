@@ -2,7 +2,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>{% block title %}Admin Page{% endblock %}</title>
+    <title>{% block title %}Employee Page{% endblock %}</title>
 
     <!-- Link CSS -->
     <link rel="stylesheet" href="{% static 'styles.css' %}">
@@ -12,10 +12,10 @@
 <body>
     <div class="topbar">
         <div class="left-section">
-            <a href="{% url 'admin:index' %}" class="app-name">Admin Page</a>
-            <a href="{% url 'admin:users_customuser_changelist' %}" class="nav-button">Users</a>
-            <a href="{% url 'admin:savings_savingaccount_changelist' %}" class="nav-button">Savings</a>
-            <a href="{% url 'admin:savings_transaction_changelist' %}" class="nav-button">Transactions</a>
+            <a href="{% url 'employee_index' %}" class="app-name">Employee Page</a>
+            <a href="{% url 'employee_users' %}" class="nav-button">Users</a>
+            <a href="{% url 'employee_savings' %}" class="nav-button">Savings</a>
+            <a href="{% url 'employee_transactions' %}" class="nav-button">Transactions</a>
         </div>
 
         <div class="right-section">
@@ -23,7 +23,7 @@
                 <a href="#" class="nav-login">{{ user.email }}</a>
 
                 <div class="dropdown">
-                    <a href="#">Admin</a>
+                    <a href="#">Dashboard</a>
                     <a href="{% url 'account_logout' %}">Logout</a>
                 </div>
             </div>
