@@ -105,3 +105,16 @@ main {
     color: #2e7d32;
     border: 1px solid #b7ebc6;
 }
+
+.errorlist {
+    color: #e74c3c;
+    font-size: 12px;
+    margin: 4px 0 0;
+    padding: 0;
+    list-style: none;
+}
+
+.errorlist.nonfield {
+    margin-top: 0;
+    margin-bottom: 5px;
+}

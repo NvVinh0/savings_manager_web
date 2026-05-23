@@ -88,17 +88,3 @@
 .login-links a:hover {
     text-decoration: underline;
 }
-
-.errorlist {
-    margin-top: 5px;
-    margin-bottom: 0;
-    padding: 0;
-    list-style: none;
-    color: #e74c3c;
-    font-size: 12px;
-}
-
-.errorlist.nonfield {
-    margin-top: 0;
-    margin-bottom: 5px;
-}

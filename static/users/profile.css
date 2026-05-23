@@ -69,11 +69,3 @@
 .save-button:hover {
     opacity: 0.9;
 }
-
-.errorlist {
-    color: #e74c3c;
-    font-size: 12px;
-    margin: 4px 0 0;
-    padding: 0;
-    list-style: none;
-}
