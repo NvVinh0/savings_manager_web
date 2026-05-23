@@ -12,6 +12,10 @@
         <h1>Users</h1>
         <p>Manage customer and employee accounts.</p>
     </div>
+
+    <a href="{% url 'create_user' %}" class="create-button">
+        Add User
+    </a>
 </div>
 
 <section class="card">
@@ -84,7 +88,9 @@
                 </td>
                 <td>
                     {% if user.is_employee %}
-                    {{ user.employee.get_role_display }}
+                    <span class="badge employee">
+                        {{ user.employee.get_role_display }}
+                    </span>
                     {% else %}
                     —
                     {% endif %}
