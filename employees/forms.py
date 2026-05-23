@@ -1,5 +1,6 @@
 from allauth.account.models import EmailAddress
 from django import forms
+from django.db import transaction
 
 from users.models import EmployeeRole, Employee, CustomUser, Customer
 
@@ -29,22 +30,23 @@ class EmployeeChangeForm(forms.Form):
         has_read = self.cleaned_data["hasRead"]
         has_write = self.cleaned_data["hasWrite"]
 
-        if not has_read:
-            if self.user.is_employee:
-                self.user.employee.delete()
-            return None
-
         if has_write:
             role = EmployeeRole.WRITE
         else:
             role = EmployeeRole.READ
 
-        employee, created = Employee.objects.get_or_create(user=self.user, defaults={"role": role})
-        if employee.role != role:
-            employee.role = role
-            employee.save(update_fields=["role"])
+        with transaction.atomic():
+            if not has_read:
+                if self.user.is_employee:
+                    self.user.employee.delete()
+                return None
 
-        return employee
+            employee, created = Employee.objects.get_or_create(user=self.user, defaults={"role": role})
+            if employee.role != role:
+                employee.role = role
+                employee.save(update_fields=["role"])
+
+            return employee
 
 class UserCreateForm(forms.Form):
     email = forms.EmailField()
@@ -82,35 +84,36 @@ class UserCreateForm(forms.Form):
         return cleaned_data
 
     def save(self):
-        user = CustomUser.objects.create_user(
-            email=self.cleaned_data["email"],
-            password=self.cleaned_data["password1"]
-        )
-
-        # Auto verify email
-        EmailAddress.objects.create(
-            user=user,
-            email=user.email,
-            verified=True,
-            primary=True
-        )
-
-        if self.cleaned_data["has_read"]:
-            role = EmployeeRole.READ
-            if self.cleaned_data["has_write"]:
-                role = EmployeeRole.WRITE
-
-            Employee.objects.create(
-                user=user,
-                role=role
+        with transaction.atomic():
+            user = CustomUser.objects.create_user(
+                email=self.cleaned_data["email"],
+                password=self.cleaned_data["password1"]
             )
 
-        if self.cleaned_data["is_customer"]:
-            Customer.objects.create(
+            EmailAddress.objects.create(
                 user=user,
-                full_name=self.cleaned_data["full_name"],
-                citizen_id=self.cleaned_data["citizen_id"],
-                address=self.cleaned_data["address"]
+                email=user.email,
+                verified=True,
+                primary=True
             )
 
-        return user
+            if self.cleaned_data.get("has_read"):
+                role = EmployeeRole.READ
+
+                if self.cleaned_data.get("has_write"):
+                    role = EmployeeRole.WRITE
+
+                Employee.objects.create(
+                    user=user,
+                    role=role
+                )
+
+            if self.cleaned_data.get("is_customer"):
+                Customer.objects.create(
+                    user=user,
+                    full_name=self.cleaned_data["full_name"],
+                    citizen_id=self.cleaned_data["citizen_id"],
+                    address=self.cleaned_data["address"]
+                )
+
+            return user

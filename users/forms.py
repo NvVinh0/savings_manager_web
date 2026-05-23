@@ -1,5 +1,7 @@
 from allauth.account.forms import SignupForm
 from django import forms
+from django.db import transaction
+
 from .models import Customer
 
 class CustomSignupForm(SignupForm):
@@ -8,16 +10,17 @@ class CustomSignupForm(SignupForm):
     address = forms.CharField(max_length=100)
 
     def save(self, request):
-        user = super().save(request)
+        with transaction.atomic():
+            user = super().save(request)
 
-        Customer.objects.create(
-            user=user,
-            full_name=self.cleaned_data["full_name"],
-            citizen_id=self.cleaned_data["citizen_id"],
-            address=self.cleaned_data["address"],
-        )
+            Customer.objects.create(
+                user=user,
+                full_name=self.cleaned_data["full_name"],
+                citizen_id=self.cleaned_data["citizen_id"],
+                address=self.cleaned_data["address"],
+            )
 
-        return user
+            return user
 
 class InformationChangeForm(forms.ModelForm):
     class Meta:
