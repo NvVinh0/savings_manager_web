@@ -29,22 +29,6 @@
     </aside>
 
     <div class="user-content">
-        <section class="card">
-            <div class="section-header">
-                <h3>User Information</h3>
-            </div>
-            <form method="post">
-                {% csrf_token %}
-                <input type="hidden" name="form_type" value="user">
-
-                {{ user_form.as_p }}
-
-                <div class="form-actions">
-                    <button type="submit">Save Changes</button>
-                </div>
-            </form>
-        </section>
-
         {% if customer_form %}
         <section class="card">
             <div class="section-header">
