@@ -1,3 +1,9 @@
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
 .user-layout {
     display: grid;
     grid-template-columns: 300px 1fr;
@@ -73,6 +79,8 @@
 }
 
 .card {
+    display: flex;
+    flex-direction: column;
     padding: 24px;
     border-radius: 16px;
     background: white;
@@ -182,9 +190,7 @@ button:hover {
 .errorlist {
     margin: 0;
     padding-left: 18px;
-
     color: #dc2626;
-
     font-size: 14px;
 }
 
