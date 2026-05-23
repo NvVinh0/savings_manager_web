@@ -13,34 +13,34 @@
     </div>
 </div>
 
-<div class="user-layout">
-    <aside class="user-sidebar card">
-        <div class="section-title">Access Settings</div>
-        <div class="checkbox-group">
-            <div class="checkbox-field">
-                {{ form.is_customer }}
-                <label for="{{ form.is_customer.id_for_label }}">
-                    Customer
-                </label>
+<form method="post">
+    <div class="user-layout">
+        {% csrf_token %}
+        <aside class="user-sidebar card">
+            <div class="section-title">Access Settings</div>
+            <div class="checkbox-group">
+                <div class="checkbox-field">
+                    {{ form.is_customer }}
+                    <label for="{{ form.is_customer.id_for_label }}">
+                        Customer
+                    </label>
+                </div>
+                <div class="checkbox-field">
+                    {{ form.has_read }}
+                    <label for="{{ form.has_read.id_for_label }}">
+                        Employee Read Access
+                    </label>
+                </div>
+                <div class="checkbox-field">
+                    {{ form.has_write }}
+                    <label for="{{ form.has_write.id_for_label }}">
+                        Employee Write Access
+                    </label>
+                </div>
             </div>
-            <div class="checkbox-field">
-                {{ form.has_read }}
-                <label for="{{ form.has_read.id_for_label }}">
-                    Employee Read Access
-                </label>
-            </div>
-            <div class="checkbox-field">
-                {{ form.has_write }}
-                <label for="{{ form.has_write.id_for_label }}">
-                    Employee Write Access
-                </label>
-            </div>
-        </div>
-    </aside>
-
-    <section class="card">
-        <form method="post">
-            {% csrf_token %}
+        </aside>
+    
+        <section class="card user-form">
             {% if form.non_field_errors %}
                 <div class="form-error">
                     {{ form.non_field_errors.0 }}
@@ -94,9 +94,9 @@
             <div class="form-actions">
                 <button type="submit">Create User</button>
             </div>
-        </form>
-    </section>
-</div>
+        </section>
+    </div>
+</form>
 <script>
 const customerCheckbox = document.getElementById("id_is_customer");
 const customerFields = document.getElementById("customer_fields");

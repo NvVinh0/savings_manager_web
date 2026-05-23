@@ -52,7 +52,6 @@ class UserCreateForm(forms.Form):
     password2 = forms.CharField(widget=forms.PasswordInput)
 
     is_customer = forms.BooleanField(required=False)
-
     has_read = forms.BooleanField(required=False, initial=True)
     has_write = forms.BooleanField(required=False)
 

@@ -96,7 +96,8 @@
     text-decoration: underline;
 }
 
-form {
+/* NEW */
+.user-form {
     display: flex;
     flex-direction: column;
     gap: 24px;
