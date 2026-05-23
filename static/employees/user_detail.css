@@ -187,13 +187,6 @@ button:hover {
     background: #b91c1c;
 }
 
-.errorlist {
-    margin: 0;
-    padding-left: 18px;
-    color: #dc2626;
-    font-size: 14px;
-}
-
 @media (max-width: 900px) {
     .user-layout {
         grid-template-columns: 1fr;

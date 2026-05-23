@@ -63,6 +63,10 @@
                 {% csrf_token %}
                 <input type="hidden" name="form_type" value="employee">
 
+                {% if employee_form.non_field_errors %}
+                {{ employee_form.non_field_errors }}
+                {% endif %}
+
                 <div class="checkbox-group">
                     <div class="checkbox-field">
                         {{ employee_form.hasRead }}
@@ -78,10 +82,6 @@
                         </label>
                     </div>
                 </div>
-
-                {% if employee_form.errors %}
-                    {{ employee_form.errors }}
-                {% endif %}
 
                 <div class="form-actions">
                     <button type="submit" name="action" value="remove" class="danger-button">
