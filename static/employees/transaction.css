@@ -1,29 +1,12 @@
 .transaction-page {
-    padding: 0 25px;
-}
-
-.transaction-header {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 16px;
-    margin-bottom: 24px;
-}
-
-.transaction-header h1 {
-    margin: 0 0 6px;
-    font-size: 32px;
-    font-weight: 700;
-}
-
-.transaction-header p {
-    margin: 0;
-    color: #6b7280;
+    flex-direction: column;
+    gap: 24px;
+    padding: 14px 25px;
 }
 
 .card {
     padding: 24px;
-    margin-bottom: 24px;
     background: white;
     border: 1px solid #e5e7eb;
     border-radius: 16px;
@@ -34,6 +17,7 @@
     display: flex;
     gap: 14px;
     flex-wrap: wrap;
+    align-items: center;
 }
 
 .search-form input,
@@ -50,6 +34,35 @@
     min-width: 220px;
 }
 
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 16px;
+    border: none;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    transition: background 0.15s ease;
+    background: #2563eb;
+    color: white;
+}
+
+.btn:hover {
+    background: #1d4ed8;
+}
+
+.btn-secondary {
+    background: #e5e7eb;
+    color: #374151;
+}
+
+.btn-secondary:hover {
+    background: #d1d5db;
+}
+
 .transactions-table {
     width: 100%;
     border-collapse: collapse;
@@ -57,7 +70,7 @@
 
 .transactions-table th,
 .transactions-table td {
-    padding-block: 16px;
+    padding: 16px 12px;
     border-bottom: 1px solid #f3f4f6;
 }
 
@@ -75,22 +88,6 @@
 .transactions-table :is(th, td):nth-child(5),
 .transactions-table :is(th, td):nth-child(6) {
     text-align: center;
-}
-
-.amount-positive {
-    color: #16a34a;
-    font-weight: 600;
-}
-
-.amount-negative {
-    color: #dc2626;
-    font-weight: 600;
-}
-
-.empty-state {
-    padding: 40px 0 !important;
-    text-align: center;
-    color: #6b7280;
 }
 
 .badge {
@@ -120,4 +117,10 @@
 .amount-negative {
     color: #dc2626;
     font-weight: 600;
+}
+
+.empty-state {
+    padding: 40px 0 !important;
+    text-align: center;
+    color: #6b7280;
 }

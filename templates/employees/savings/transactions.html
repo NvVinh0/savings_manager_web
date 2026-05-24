@@ -6,76 +6,85 @@
 {% endblock %}
 
 {% block content %}
-<div class="transaction-page">
-    <div class="filter-bar">
-        <form method="get" class="filter-form">
-            <input
-                type="text"
-                name="q"
-                placeholder="Search (plan id / type)..."
-                value="{{ request.GET.q }}"
-                class="input"
-            >
-            <select name="type" class="input">
-                <option value="">All types</option>
-                {% for key, label in transaction_types %}
-                    <option value="{{ key }}" {% if request.GET.type == key %}selected{% endif %}>
-                        {{ label }}
-                    </option>
-                {% endfor %}
-            </select>
-
-            <button type="submit" class="btn">Filter</button>
-            <a href="{% url 'employees:transactions' %}" class="btn btn-secondary">Reset</a>
-        </form>
+<div class="page-header">
+    <div>
+        <h1>Transactions</h1>
+        <p>View and manage all transaction records.</p>
     </div>
+</div>
 
-    <div class="table-wrapper">
-        <table class="transactions-table">
-            <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>Type</th>
-                    <th>Saving Plan</th>
-                    <th>Amount</th>
-                    <th>Before</th>
-                    <th>After</th>
-                    <th>Time</th>
-                </tr>
-            </thead>
+<section class="card">
+    <form method="get" class="search-form">
+        <input
+            type="text"
+            name="q"
+            placeholder="Search by plan id or type..."
+            value="{{ request.GET.q }}"
+        >
+        <select name="type">
+            <option value="">All types</option>
+            {% for key, label in transaction_types %}
+            <option value="{{ key }}"
+                {% if request.GET.type == key %}
+                    selected
+                {% endif %}
+            >
+                {{ label }}
+            </option>
+            {% endfor %}
+        </select>
+        <button type="submit">Search</button>
+        <a href="{% url 'manage_transactions' %}" class="action-button">Reset</a>
+    </form>
+</section>
 
-            <tbody>
-                {% for t in transactions %}
-                <tr>
-                    <td>{{ t.id }}</td>
-                    <td>
-                        <span class="badge {{ t.transaction_type|lower }}">
-                            {{ t.transaction_type }}
-                        </span>
-                    </td>
-                    <td>#{{ t.saving_plan.id }}</td>
-                    <td>
-                        {% if t.transaction_type == "DEPOSIT" or t.transaction_type == "OPEN" %}
+<section class="card">
+    <table class="transactions-table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Type</th>
+                <th>Saving Plan</th>
+                <th>Amount</th>
+                <th>Before</th>
+                <th>After</th>
+                <th>Time</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            {% for t in transactions %}
+            <tr>
+                <td>{{ t.id }}</td>
+                <td>
+                    <span class="badge {{ t.transaction_type|lower }}">
+                        {{ t.transaction_type }}
+                    </span>
+                </td>
+                <td>#{{ t.saving_plan.id }}</td>
+                <td>
+                    {% if t.transaction_type == "DEPOSIT" or t.transaction_type == "OPEN" %}
                         <span class="amount-positive">
                             +{{ t.amount|floatformat:2 }}
                         </span>
-                        {% else %}
+                    {% else %}
                         <span class="amount-negative">
                             -{{ t.amount|floatformat:2 }}
                         </span>
-                        {% endif %}
-                    </td>
-                    <td>{{ t.balance_before }}</td>
-                    <td>{{ t.balance_after }}</td>
-                    <td>{{ t.timestamp|date:"Y-m-d H:i" }}</td>
-                </tr>
-                {% empty %}
-                <tr>
-                    <td colspan="7" class="empty">No transactions found</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-</div>
+                    {% endif %}
+                </td>
+                <td>{{ t.balance_before }}</td>
+                <td>{{ t.balance_after }}</td>
+                <td>{{ t.timestamp|date:"Y-m-d H:i" }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="7" class="empty-state">
+                    No transactions found.
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</section>
 {% endblock %}
