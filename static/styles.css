@@ -124,3 +124,27 @@ main {
     margin-top: 0;
     margin-bottom: 5px;
 }
+
+.create-button,
+.search-form button,
+.action-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 16px;
+    border: none;
+    border-radius: 10px;
+    background: #2563eb;
+    color: white;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.create-button:hover,
+.search-form button:hover,
+.action-button:hover {
+    background: #1d4ed8;
+}
