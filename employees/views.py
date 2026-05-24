@@ -95,6 +95,3 @@ def user_create(request):
 
 def manage_saving_plan_detail(request, account_number):
     pass
-
-def manage_transaction_detail(request, transaction_id):
-    pass
