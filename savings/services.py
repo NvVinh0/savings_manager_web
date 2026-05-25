@@ -215,42 +215,52 @@ def change_saving_type_rate(saving_type: SavingType, new_rate: Decimal, effectiv
 def close_account(account: SavingPlan):
     return account.delete()
 
-def get_statistics(period, date, account, month=None, year=None):
-    qs = Transaction.objects.filter(account=account)
+def get_statistics(period: str, saving_plan=None, date=None, month=None, year=None):
+    transactions = Transaction.objects.all()
+
+    if saving_plan is not None:
+        transactions = transactions.filter(saving_plan=saving_plan)
     
     if period == "day":
         if date:
-            qs = qs.filter(timestamp__date=date)
+            transactions = transactions.filter(timestamp__date=date)
     elif period == "month":
         if month:
             try:
                 year_val, month_val = month.split("-")
-                qs = qs.filter(timestamp__year=int(year_val), timestamp__month=int(month_val))
+                transactions = transactions.filter(timestamp__year=int(year_val), timestamp__month=int(month_val))
             except ValueError:
                 pass
     elif period == "year":
         if year:
-            qs = qs.filter(timestamp__year=int(year))
+            transactions = transactions.filter(timestamp__year=int(year))
 
-    total_income = qs.filter(transaction_type__in=["OPEN", "DEPOSIT"]).aggregate(total=Sum("amount"))["total"] or Decimal("0")
-    total_expense = qs.filter(transaction_type__in=["WITHDRAW", "CLOSE"]).aggregate(total=Sum("amount"))["total"] or Decimal("0")
+    total_open = transactions.filter(transaction_type="OPEN").aggregate(total=Sum("amount"))["total"] or Decimal("0")
+    total_deposit = transactions.filter(transaction_type="DEPOSIT").aggregate(total=Sum("amount"))["total"] or Decimal("0")
+    total_withdraw = transactions.filter(transaction_type="WITHDRAW").aggregate(total=Sum("amount"))["total"] or Decimal("0")
+    total_close = transactions.filter(transaction_type="CLOSE").aggregate(total=Sum("amount"))["total"] or Decimal("0")
+    total_income = total_open + total_deposit
+    total_expense = total_withdraw + total_close
 
     if period == "day":
         label = str(date) if date else "N/A"
-
     elif period == "month":
         label = month if month else "N/A"
-
     elif period == "year":
         label = str(year) if year else "N/A"
-
     else:
         label = "N/A"
 
     return {
         "label": label,
-        "account_number": account.account_number,
-        "account_name": account.name,
+        "account_number": saving_plan.account_number if saving_plan else "All",
+        "account_name": getattr(saving_plan, "name", "All accounts") if saving_plan else "All accounts",
+        "total_open": total_open,
+        "total_deposit": total_deposit,
+        "total_withdraw": total_withdraw,
+        "total_close": total_close,
+        "opened_count": transactions.filter(transaction_type="OPEN").count(),
+        "closed_count": transactions.filter(transaction_type="CLOSE").count(),
         "total_income": total_income,
         "total_expense": total_expense,
         "difference": total_income - total_expense
