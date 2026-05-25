@@ -1,4 +1,5 @@
 from django.shortcuts import render, get_object_or_404, redirect
+from django.utils.dateparse import parse_date
 from django.utils.timezone import now
 
 from dashboard.utils import read_session_errors
@@ -132,4 +133,65 @@ def manage_saving_plan_detail(request, account_number):
     pass
 
 def manage_reports(request):
-    return render(request, "employees/savings/reports.html")
+    today = now().date()
+    current_month = today.strftime("%Y-%m")
+    selected_report = request.GET.get("report", "cash")
+
+    if selected_report not in {"cash", "plans"}:
+        selected_report = "cash"
+
+    selected_date = parse_date(request.GET.get("date", "")) or today
+    if selected_date > today:
+        selected_date = today
+
+    selected_month = request.GET.get("month") or current_month
+    try:
+        selected_year_value, selected_month_value = selected_month.split("-")
+        selected_year_value = int(selected_year_value)
+        selected_month_value = int(selected_month_value)
+        selected_month_date = parse_date(f"{selected_month}-01")
+        current_month_date = today.replace(day=1)
+        if selected_month_date is None or selected_month_value < 1 or selected_month_value > 12:
+            raise ValueError
+        if selected_month_date > current_month_date:
+            selected_month = current_month
+            selected_year_value = today.year
+            selected_month_value = today.month
+    except ValueError:
+        selected_month = current_month
+        selected_year_value = today.year
+        selected_month_value = today.month
+
+    report = None
+    if selected_report == "cash":
+        statistics = get_statistics("day", date=selected_date)
+        report = {
+            "type": "cash",
+            "label": selected_date,
+            "deposits": statistics["total_deposit"],
+            "withdrawals": statistics["total_withdraw"],
+            "difference": statistics["total_deposit"] - statistics["total_withdraw"],
+        }
+    else:
+        statistics = get_statistics("month", month=selected_month)
+        opened_count = SavingPlan.objects.filter(
+            created_at__year=selected_year_value,
+            created_at__month=selected_month_value,
+        ).count()
+        closed_count = statistics["closed_count"]
+        report = {
+            "type": "plans",
+            "label": selected_month,
+            "opened": opened_count,
+            "closed": closed_count,
+            "difference": opened_count - closed_count,
+        }
+
+    return render(request, "employees/savings/reports.html", {
+        "report": report,
+        "selected_report": selected_report,
+        "selected_date": selected_date,
+        "selected_month": selected_month,
+        "today": today,
+        "current_month": current_month,
+    })
