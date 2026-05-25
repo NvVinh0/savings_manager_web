@@ -1,14 +1,36 @@
 from django.shortcuts import render, get_object_or_404, redirect
+from django.utils.timezone import now
 
 from dashboard.utils import read_session_errors
 from savings.models import SavingPlan, Transaction, TransactionType
+from savings.services import get_statistics
 from users.forms import InformationChangeForm
 from users.models import CustomUser
 from .forms import EmployeeChangeForm, UserCreateForm
 
 
 def employee_dashboard(request):
-    return render(request, "employees/dashboard.html")
+    today = now().date()
+    month_start = today.replace(day=1)
+    month_label = today.strftime("%Y-%m")
+
+    daily_statistics = get_statistics("day", date=today)
+    monthly_statistics = get_statistics("month", month=month_label)
+    opened_this_month = SavingPlan.objects.filter(created_at__date__gte=month_start).count()
+    closed_this_month = monthly_statistics["closed_count"]
+
+    return render(request, "employees/dashboard.html", {
+        "deposit_report": {
+            "deposits": daily_statistics["total_deposit"],
+            "withdrawals": daily_statistics["total_withdraw"],
+            "difference": daily_statistics["total_deposit"] - daily_statistics["total_withdraw"],
+        },
+        "saving_plan_report": {
+            "opened": opened_this_month,
+            "closed": closed_this_month,
+            "difference": opened_this_month - closed_this_month,
+        },
+    })
 
 def manage_users(request):
     users = CustomUser.objects.all()
