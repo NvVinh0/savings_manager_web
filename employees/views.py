@@ -1,4 +1,5 @@
 from django.shortcuts import render, get_object_or_404, redirect
+from django.db.models import Q
 from django.utils.dateparse import parse_date
 from django.utils.timezone import now
 
@@ -34,7 +35,24 @@ def employee_dashboard(request):
     })
 
 def manage_users(request):
-    users = CustomUser.objects.all()
+    users = CustomUser.objects.select_related("customer", "employee").all()
+
+    query = request.GET.get("search", "").strip()
+    user_type = request.GET.get("type", "")
+
+    if query:
+        users = users.filter(
+            Q(email__icontains=query) or
+            Q(customer__full_name__icontains=query) or
+            Q(customer__citizen_id__icontains=query) or
+            Q(employee__role__icontains=query)
+        )
+
+    if user_type == "customer":
+        users = users.filter(customer__isnull=False)
+    elif user_type == "employee":
+        users = users.filter(employee__isnull=False)
+
     return render(request, "employees/users/users.html", {
         "users": users,
         "message_success": request.session.pop("message_success", None)
@@ -47,7 +65,7 @@ def manage_saving_plans(request):
 def manage_transactions(request):
     transactions = Transaction.objects.select_related("saving_plan").order_by("-timestamp")
 
-    query = request.GET.get("q")
+    query = request.GET.get("search")
     transaction_type = request.GET.get("type")
 
     if query:
