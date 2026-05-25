@@ -77,7 +77,7 @@ class SavingPlan(models.Model):
     interest_last_applied_on = models.DateField(null=True, blank=True)
 
     saving_type = models.ForeignKey(SavingType, on_delete=models.PROTECT, related_name="accounts")
-    user = models.ForeignKey(Customer, null=True, on_delete=models.SET_NULL, related_name='saving_accounts')
+    customer = models.ForeignKey(Customer, null=True, on_delete=models.SET_NULL, related_name='saving_accounts')
 
     def deposit(self, amount):
         self.balance += amount
