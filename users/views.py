@@ -2,8 +2,8 @@ from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth.forms import PasswordChangeForm
 from django.shortcuts import redirect, render
 
-from savings_manager_web.decorators import customer_required
-from savings_manager_web.utils import read_session_errors
+from dashboard.decorators import customer_required
+from dashboard.utils import read_session_errors
 from users.forms import EmailChangeForm, InformationChangeForm
 
 @customer_required
