@@ -1,57 +1,28 @@
-from django.shortcuts import render, get_object_or_404, redirect
-from django.db.models import Q
-from django.utils.dateparse import parse_date
-from django.utils.timezone import now
+from django.shortcuts import render, redirect
 
 from dashboard.utils import read_session_errors
-from savings.models import SavingPlan, Transaction, TransactionType
-from savings.services import get_statistics
+from savings.models import TransactionType
 from users.forms import InformationChangeForm
-from users.models import CustomUser
 from .forms import EmployeeChangeForm, UserCreateForm
+from .services import (
+    build_report_context,
+    get_dashboard_reports,
+    get_saving_plans,
+    get_user_by_id,
+    remove_employee_access,
+    search_transactions,
+    search_users,
+)
 
 
 def employee_dashboard(request):
-    today = now().date()
-    month_start = today.replace(day=1)
-    month_label = today.strftime("%Y-%m")
-
-    daily_statistics = get_statistics("day", date=today)
-    monthly_statistics = get_statistics("month", month=month_label)
-    opened_this_month = SavingPlan.objects.filter(created_at__date__gte=month_start).count()
-    closed_this_month = monthly_statistics["closed_count"]
-
-    return render(request, "employees/dashboard.html", {
-        "deposit_report": {
-            "deposits": daily_statistics["total_deposit"],
-            "withdrawals": daily_statistics["total_withdraw"],
-            "difference": daily_statistics["total_deposit"] - daily_statistics["total_withdraw"],
-        },
-        "saving_plan_report": {
-            "opened": opened_this_month,
-            "closed": closed_this_month,
-            "difference": opened_this_month - closed_this_month,
-        },
-    })
+    return render(request, "employees/dashboard.html", get_dashboard_reports())
 
 def manage_users(request):
-    users = CustomUser.objects.select_related("customer", "employee").all()
-
-    query = request.GET.get("search", "").strip()
-    user_type = request.GET.get("type", "")
-
-    if query:
-        users = users.filter(
-            Q(email__icontains=query) or
-            Q(customer__full_name__icontains=query) or
-            Q(customer__citizen_id__icontains=query) or
-            Q(employee__role__icontains=query)
-        )
-
-    if user_type == "customer":
-        users = users.filter(customer__isnull=False)
-    elif user_type == "employee":
-        users = users.filter(employee__isnull=False)
+    users = search_users(
+        query=request.GET.get("search", ""),
+        user_type=request.GET.get("type", ""),
+    )
 
     return render(request, "employees/users/users.html", {
         "users": users,
@@ -59,20 +30,14 @@ def manage_users(request):
     })
 
 def manage_saving_plans(request):
-    saving_plans = SavingPlan.objects.all()
+    saving_plans = get_saving_plans()
     return render(request, "employees/savings/savings.html", {"saving_plans": saving_plans})
 
 def manage_transactions(request):
-    transactions = Transaction.objects.select_related("saving_plan").order_by("-timestamp")
-
-    query = request.GET.get("search")
-    transaction_type = request.GET.get("type")
-
-    if query:
-        transactions = transactions.filter(saving_plan__id__icontains=query)
-
-    if transaction_type:
-        transactions = transactions.filter(transaction_type=transaction_type)
+    transactions = search_transactions(
+        query=request.GET.get("search", ""),
+        transaction_type=request.GET.get("type", ""),
+    )
 
     return render(request, "employees/savings/transactions.html", {
         "transactions": transactions,
@@ -80,7 +45,7 @@ def manage_transactions(request):
     })
 
 def manage_user_detail(request, user_id):
-    user = get_object_or_404(CustomUser, id=user_id)
+    user = get_user_by_id(user_id)
 
     if request.method == "POST":
         match request.POST.get("form_type"):
@@ -94,17 +59,14 @@ def manage_user_detail(request, user_id):
             case "employee":
                 action = request.POST.get("action")
                 if action == "remove":
-                    if user.is_employee:
-                        if not user.is_customer:
-                            # if user is not a customer, delete the user
-                            user.delete()
+                    try:
+                        result = remove_employee_access(user)
+                        if result == "deleted":
                             request.session["message_success"] = "User deleted successfully."
                             return redirect(manage_users)
-                        else:
-                            user.employee.delete()
-                            request.session["message_success"] = "Employee access updated successfully."
-                    else:
-                        request.session["employee_form_errors"] = { "__all__": ["User is not Employee"] }
+                        request.session["message_success"] = "Employee access updated successfully."
+                    except ValueError as exc:
+                        request.session["employee_form_errors"] = { "__all__": [str(exc)] }
                 else:
                     employee_form = EmployeeChangeForm(request.POST, user=user)
                     if employee_form.is_valid():
@@ -147,69 +109,13 @@ def user_create(request):
 
     return render(request, "employees/users/user_create.html", { "form": form })
 
-def manage_saving_plan_detail(request, account_number):
+def manage_saving_plan_detail(request, plan_id):
     pass
 
 def manage_reports(request):
-    today = now().date()
-    current_month = today.strftime("%Y-%m")
-    selected_report = request.GET.get("report", "cash")
-
-    if selected_report not in {"cash", "plans"}:
-        selected_report = "cash"
-
-    selected_date = parse_date(request.GET.get("date", "")) or today
-    if selected_date > today:
-        selected_date = today
-
-    selected_month = request.GET.get("month") or current_month
-    try:
-        selected_year_value, selected_month_value = selected_month.split("-")
-        selected_year_value = int(selected_year_value)
-        selected_month_value = int(selected_month_value)
-        selected_month_date = parse_date(f"{selected_month}-01")
-        current_month_date = today.replace(day=1)
-        if selected_month_date is None or selected_month_value < 1 or selected_month_value > 12:
-            raise ValueError
-        if selected_month_date > current_month_date:
-            selected_month = current_month
-            selected_year_value = today.year
-            selected_month_value = today.month
-    except ValueError:
-        selected_month = current_month
-        selected_year_value = today.year
-        selected_month_value = today.month
-
-    report = None
-    if selected_report == "cash":
-        statistics = get_statistics("day", date=selected_date)
-        report = {
-            "type": "cash",
-            "label": selected_date,
-            "deposits": statistics["total_deposit"],
-            "withdrawals": statistics["total_withdraw"],
-            "difference": statistics["total_deposit"] - statistics["total_withdraw"],
-        }
-    else:
-        statistics = get_statistics("month", month=selected_month)
-        opened_count = SavingPlan.objects.filter(
-            created_at__year=selected_year_value,
-            created_at__month=selected_month_value,
-        ).count()
-        closed_count = statistics["closed_count"]
-        report = {
-            "type": "plans",
-            "label": selected_month,
-            "opened": opened_count,
-            "closed": closed_count,
-            "difference": opened_count - closed_count,
-        }
-
-    return render(request, "employees/savings/reports.html", {
-        "report": report,
-        "selected_report": selected_report,
-        "selected_date": selected_date,
-        "selected_month": selected_month,
-        "today": today,
-        "current_month": current_month,
-    })
+    context = build_report_context(
+        report_type=request.GET.get("report", "cash"),
+        date_value=request.GET.get("date", ""),
+        month_value=request.GET.get("month", ""),
+    )
+    return render(request, "employees/savings/reports.html", context)
