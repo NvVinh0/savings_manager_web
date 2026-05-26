@@ -7,7 +7,7 @@ from dashboard.utils import get_parameter
 from django.db.models import QuerySet
 from django.utils.timezone import now
 
-from savings.models import SavingPlan, SavingType, SavingTypeRateHistory, Transaction
+from savings.models import SavingPlan, SavingType, SavingTypeRateHistory, Transaction, TransactionType
 from users.models import CustomUser, Customer
 
 
@@ -34,21 +34,22 @@ def create_saving_plan(
     if not saving_type.is_flexible and saving_type.duration_months:
         maturity_date = _add_months(now().date(), saving_type.duration_months)
 
-    saving_plan = SavingPlan.objects.create(
-        balance=initial_balance,
-        interest_rate=saving_type.interest_rate,
-        # Start accrual tracking on account creation date for flexible accounts.
-        interest_last_applied_on=now().date() if saving_type.is_flexible else None,
-        maturity_date=maturity_date,
-        saving_type=saving_type, customer=customer)
+    with transaction.atomic():
+        saving_plan = SavingPlan.objects.create(
+            balance=initial_balance,
+            interest_rate=saving_type.interest_rate,
+            # Start accrual tracking on account creation date for flexible accounts.
+            interest_last_applied_on=now().date() if saving_type.is_flexible else None,
+            maturity_date=maturity_date,
+            saving_type=saving_type, customer=customer)
 
-    Transaction.objects.create(
-        saving_plan=saving_plan,
-        transaction_type='OPEN',
-        balance_before=Decimal("0.00"),
-        amount=initial_balance,
-        balance_after=initial_balance,
-    )
+        save_transaction(
+            saving_plan,
+            TransactionType.OPEN,
+            Decimal("0.00"),
+            initial_balance,
+            initial_balance
+        )
 
     return saving_plan
 
@@ -88,12 +89,12 @@ def deposit(saving_plan: SavingPlan, amount: Decimal):
         saving_plan.balance = balance_before + amount
         saving_plan.save(update_fields=["balance"])
 
-        Transaction.objects.create(
-            saving_plan=saving_plan,
-            transaction_type='DEPOSIT',
-            balance_before=balance_before,
-            amount=amount,
-            balance_after=saving_plan.balance
+        save_transaction(
+            saving_plan,
+            TransactionType.DEPOSIT,
+            balance_before,
+            amount,
+            balance_before + amount
         )
 
 def withdraw(saving_plan: SavingPlan, amount: Decimal) -> Decimal:
@@ -111,21 +112,20 @@ def withdraw(saving_plan: SavingPlan, amount: Decimal) -> Decimal:
         saving_plan.refresh_from_db()
         today = now().date()
 
+        balance = apply_interest(saving_plan)
+
         if not saving_plan.saving_type.is_flexible: # fixed-term
             if saving_plan.maturity_date is None:
                 raise ValueError("Fixed-term account is missing maturity date")
             if today < saving_plan.maturity_date:
                 raise ValueError("Cannot withdraw before maturity")
 
-            # calculate full payout (principal + interest)
-            balance = apply_interest(saving_plan)
-
-            Transaction.objects.create(
-                saving_plan=saving_plan,
-                transaction_type='CLOSE',
-                balance_before=balance,
-                amount=balance, # withdraw all
-                balance_after=0
+            save_transaction(
+                saving_plan,
+                TransactionType.WITHDRAW,
+                balance,
+                balance,
+                Decimal("0.00")
             )
 
             # close account after withdrawal
@@ -138,21 +138,24 @@ def withdraw(saving_plan: SavingPlan, amount: Decimal) -> Decimal:
             if days_since_start < min_deposit_days_flexible:
                 raise ValueError(f"Cannot withdraw within first {min_deposit_days_flexible} days")
 
-            balance = apply_interest(saving_plan)
-
             if amount > saving_plan.balance:
                 raise ValueError("Insufficient balance")
 
-            saving_plan.balance = balance - amount
+            balance_after = balance - amount
+
+            saving_plan.balance = balance_after
             saving_plan.save(update_fields=["balance"])
 
-            Transaction.objects.create(
-                saving_plan=saving_plan,
-                transaction_type='WITHDRAW',
-                balance_before=balance,
-                amount=amount,
-                balance_after=saving_plan.balance
+            save_transaction(
+                saving_plan,
+                TransactionType.WITHDRAW,
+                balance,
+                amount,
+                balance_after
             )
+
+            if balance_after == 0:
+                close_saving_plan(saving_plan)
 
             return amount
 
@@ -198,6 +201,18 @@ def apply_interest(saving_plan: SavingPlan):
     saving_plan.save(update_fields=["balance", "interest_last_applied_on", "interest_rate"])
     return saving_plan.balance
 
+def close_saving_plan(saving_plan: SavingPlan):
+    """ Should be called inside an atomic transaction. """
+
+    save_transaction(
+        saving_plan,
+        TransactionType.CLOSE,
+        Decimal("0.00"),
+        Decimal("0.00"),
+        Decimal("0.00")
+    )
+    saving_plan.delete()
+
 def change_saving_type_rate(
     saving_type: SavingType,
         new_rate: Decimal,
@@ -226,9 +241,6 @@ def change_saving_type_rate(
         saving_type.save(update_fields=["interest_rate"])
 
     return saving_type
-
-def close_saving_plan(account: SavingPlan):
-    return account.delete()
 
 def get_statistics(period: str, saving_plan=None, date=None, month=None, year=None):
     transactions = Transaction.objects.all()
@@ -284,3 +296,18 @@ def get_statistics(period: str, saving_plan=None, date=None, month=None, year=No
         "total_expense": total_expense,
         "difference": total_income - total_expense
     }
+
+def save_transaction(
+    saving_plan: SavingPlan,
+    transaction_type: TransactionType,
+    balance_before: Decimal,
+    amount: Decimal,
+    balance_after: Decimal
+):
+    Transaction.objects.create(
+        saving_plan=saving_plan,
+        transaction_type=transaction_type,
+        balance_before=balance_before,
+        amount=amount,
+        balance_after=balance_after
+    )
