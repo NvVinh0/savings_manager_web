@@ -3,6 +3,7 @@ from django import forms
 from django.db import transaction
 
 from users.models import EmployeeRole, Employee, CustomUser, Customer
+from savings.models import SavingType, SavingPlan
 
 
 class EmployeeChangeForm(forms.Form):
@@ -117,3 +118,54 @@ class UserCreateForm(forms.Form):
                 )
 
             return user
+
+class SavingTypeEditForm(forms.ModelForm):
+    class Meta:
+        model = SavingType
+        fields = ['name', 'duration_months', 'interest_rate', 'is_flexible', 'is_active']
+        widgets = {
+            'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Saving Type Name'}),
+            'duration_months': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': '3, 6, 12'}),
+            'interest_rate': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.0001', 'placeholder': '0.05'}),
+            'is_flexible': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'is_active': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        }
+
+class SavingPlanEditForm(forms.ModelForm):
+    class Meta:
+        model = SavingPlan
+        fields = ['balance', 'interest_rate', 'maturity_date', 'is_active', 'interest_last_applied_on']
+        widgets = {
+            'balance': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'step': '0.01',
+                'placeholder': '0.00',
+                'min': '0'
+            }),
+            'interest_rate': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'step': '0.0001',
+                'placeholder': '0.05',
+                'min': '0'
+            }),
+            'maturity_date': forms.DateInput(attrs={
+                'class': 'form-control',
+                'type': 'date',
+            }),
+            'is_active': forms.CheckboxInput(attrs={
+                'class': 'form-check-input',
+            }),
+            'interest_last_applied_on': forms.DateInput(attrs={
+                'class': 'form-control',
+                'type': 'date',
+            }),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.instance.pk:
+            self.fields['balance'].initial = self.instance.balance
+            self.fields['interest_rate'].initial = self.instance.interest_rate
+            self.fields['maturity_date'].initial = self.instance.maturity_date
+            self.fields['is_active'].initial = self.instance.is_active
+            self.fields['interest_last_applied_on'].initial = self.instance.interest_last_applied_on
