@@ -19,12 +19,12 @@
             <select name="account" required>
                 <option value="">Select saving plan</option>
                 {% for account in accounts %}
-                <option value="{{ account.account_number }}"
-                    {% if selected_account_number == account.account_number %}
+                <option value="{{ account.plan_id }}"
+                    {% if selected_account_number == account.plan_id %}
                         selected
                     {% endif %}
                 >
-                    {{ account.account_number }} - {{ account.saving_type.name }}
+                    {{ account.plan_id }} - {{ account.saving_type.name }}
                 </option>
                 {% endfor %}
             </select>
@@ -63,7 +63,7 @@
                                 {{ t.transaction_type }}
                             </span>
                         </td>
-                        <td>#{{ t.saving_plan.account_number }}</td>
+                        <td>#{{ t.saving_plan.plan_id }}</td>
                         <td>
                             {% if t.transaction_type == "DEPOSIT" or t.transaction_type == "OPEN" %}
                                 <span class="amount-positive">

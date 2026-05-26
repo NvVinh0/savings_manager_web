@@ -2,15 +2,14 @@ from django.db import transaction
 from decimal import Decimal
 from datetime import date
 from django.db.models import Sum
-from django.utils.timezone import now
 
 from dashboard.utils import get_parameter
-from savings.models import Transaction, Parameter
 from django.db.models import QuerySet
 from django.utils.timezone import now
 
 from savings.models import SavingPlan, SavingType, SavingTypeRateHistory, Transaction
-from users.models import CustomUser
+from users.models import CustomUser, Customer
+
 
 def _add_months(d: date, months: int) -> date:
     year = d.year + (d.month - 1 + months) // 12
@@ -19,13 +18,13 @@ def _add_months(d: date, months: int) -> date:
     day = min(d.day, [31, 29 if year % 4 == 0 and (year % 100 != 0 or year % 400 == 0) else 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][month - 1])
     return date(year, month, day)
 
-def get_all_accounts():
+def get_all_saving_plans():
     return SavingPlan.objects.all()
 
-def create_account(
-        initial_balance: Decimal,
-        user: CustomUser,
-        saving_type: SavingType
+def create_saving_plan(
+    customer: Customer,
+    saving_type: SavingType,
+    initial_balance: Decimal
 ) -> SavingPlan:
     min_initial_deposit = Decimal(get_parameter("min_initial_deposit", 1_000_000))
     if initial_balance < min_initial_deposit:
@@ -35,9 +34,7 @@ def create_account(
     if not saving_type.is_flexible and saving_type.duration_months:
         maturity_date = _add_months(now().date(), saving_type.duration_months)
 
-    customer = getattr(user, "customer", user)
-
-    account = SavingPlan.objects.create(
+    saving_plan = SavingPlan.objects.create(
         balance=initial_balance,
         interest_rate=saving_type.interest_rate,
         # Start accrual tracking on account creation date for flexible accounts.
@@ -46,29 +43,28 @@ def create_account(
         saving_type=saving_type, customer=customer)
 
     Transaction.objects.create(
-        saving_plan=account,
+        saving_plan=saving_plan,
         transaction_type='OPEN',
         balance_before=Decimal("0.00"),
         amount=initial_balance,
         balance_after=initial_balance,
     )
 
-    return account
+    return saving_plan
 
-def get_account_by_number(account_number: str) -> SavingPlan | None:
-    return SavingPlan.objects.get(account_number=account_number)
+def get_plan_by_id(plan_id: str) -> SavingPlan | None:
+    return SavingPlan.objects.get(account_number=plan_id)
 
-def get_account_by_user(user: CustomUser) -> QuerySet[SavingPlan, SavingPlan]:
-    customer = getattr(user, "customer", None)
-    if customer is None:
+def get_plans_by_user(user: CustomUser) -> QuerySet[SavingPlan, SavingPlan]:
+    if not user.is_customer:
         return SavingPlan.objects.none()
-    return SavingPlan.objects.filter(customer=customer)
+    return SavingPlan.objects.filter(customer=user.customer)
 
 # get by name is unreliable
-def get_account_by_citizen_id(citizen_id: str) -> QuerySet[SavingPlan, SavingPlan]:
+def get_plans_by_citizen_id(citizen_id: str) -> QuerySet[SavingPlan, SavingPlan]:
     return SavingPlan.objects.filter(customer__citizen_id=citizen_id)
 
-def deposit_to_account(account: SavingPlan, amount: Decimal):
+def deposit(saving_plan: SavingPlan, amount: Decimal):
     minimum_deposit = Decimal(get_parameter("min_additional_deposit", 100_000))
     if amount < minimum_deposit:
         raise ValueError(
@@ -76,52 +72,56 @@ def deposit_to_account(account: SavingPlan, amount: Decimal):
         )
 
     with transaction.atomic():
-        account.refresh_from_db()
+        saving_plan.refresh_from_db()
         today = now().date()
 
-        if not account.saving_type.is_flexible:
-            if account.maturity_date is None:
+        if not saving_plan.saving_type.is_flexible:
+            if saving_plan.maturity_date is None:
                 raise ValueError("Fixed-term account is missing maturity date")
-            if today != account.maturity_date:
+            if today != saving_plan.maturity_date:
                 raise ValueError("Deposit only allowed on maturity date for fixed-term saving types")
         else:
             # For flexible accounts, accrue pending interest first (using rate history).
-            apply_interest(account)
-        balance_before = account.balance
+            apply_interest(saving_plan)
+        balance_before = saving_plan.balance
 
-        account.balance = balance_before + amount
-        account.save(update_fields=["balance"])
+        saving_plan.balance = balance_before + amount
+        saving_plan.save(update_fields=["balance"])
 
         Transaction.objects.create(
-            saving_plan=account,
+            saving_plan=saving_plan,
             transaction_type='DEPOSIT',
             balance_before=balance_before,
             amount=amount,
-            balance_after=account.balance
+            balance_after=saving_plan.balance
         )
 
-def withdraw_from_account(account: SavingPlan, amount: Decimal) -> Decimal:
-    # fixed-term: - only allow withdrawal after maturity day and have to withdraw all balances
-    #             - after maturity, interest rate will be non-fixed-term interest rate
-    #             - close after withdrawal
-    # non-fixed-term: only allow withdrawal after 15 days, can withdraw partial
-    # calculate balance after maturity before withdrawal
+def withdraw(saving_plan: SavingPlan, amount: Decimal) -> Decimal:
+    """
+    fixed-term: - only allow withdrawal after maturity day and have to withdraw all balances
+                - after maturity, the interest rate will be a non-fixed-term interest rate
+                - close after withdrawal
+    non-fixed-term: only allow withdrawal after 15 days, can withdraw partial
+    calculate balance after maturity before withdrawal
+    """
+
+    min_deposit_days_flexible = Decimal(get_parameter("min_deposit_days_flexible", 15))
 
     with transaction.atomic():
-        account.refresh_from_db()
+        saving_plan.refresh_from_db()
         today = now().date()
 
-        if not account.saving_type.is_flexible: # fixed-term
-            if account.maturity_date is None:
+        if not saving_plan.saving_type.is_flexible: # fixed-term
+            if saving_plan.maturity_date is None:
                 raise ValueError("Fixed-term account is missing maturity date")
-            if today < account.maturity_date:
+            if today < saving_plan.maturity_date:
                 raise ValueError("Cannot withdraw before maturity")
 
             # calculate full payout (principal + interest)
-            balance = apply_interest(account)
+            balance = apply_interest(saving_plan)
 
             Transaction.objects.create(
-                saving_plan=account,
+                saving_plan=saving_plan,
                 transaction_type='CLOSE',
                 balance_before=balance,
                 amount=balance, # withdraw all
@@ -129,48 +129,48 @@ def withdraw_from_account(account: SavingPlan, amount: Decimal) -> Decimal:
             )
 
             # close account after withdrawal
-            close_account(account)
+            close_saving_plan(saving_plan)
 
             return balance
         else:
             # 15-day lock
-            days_since_start = (today - account.start_date).days
-            if days_since_start < 15:
-                raise ValueError("Cannot withdraw within first 15 days")
+            days_since_start = (today - saving_plan.start_date).days
+            if days_since_start < min_deposit_days_flexible:
+                raise ValueError(f"Cannot withdraw within first {min_deposit_days_flexible} days")
 
-            balance = apply_interest(account)
+            balance = apply_interest(saving_plan)
 
-            if amount > account.balance:
+            if amount > saving_plan.balance:
                 raise ValueError("Insufficient balance")
 
-            account.balance = balance - amount
-            account.save(update_fields=["balance"])
+            saving_plan.balance = balance - amount
+            saving_plan.save(update_fields=["balance"])
 
             Transaction.objects.create(
-                saving_plan=account,
+                saving_plan=saving_plan,
                 transaction_type='WITHDRAW',
                 balance_before=balance,
                 amount=amount,
-                balance_after=account.balance
+                balance_after=saving_plan.balance
             )
 
             return amount
 
-def apply_interest(account: SavingPlan):
+def apply_interest(saving_plan: SavingPlan):
     # Fixed-term: estimate payout as principal + simple interest.
-    if not account.saving_type.is_flexible:
-        return account.balance + (account.balance * account.interest_rate / 100)
+    if not saving_plan.saving_type.is_flexible:
+        return saving_plan.balance + (saving_plan.balance * saving_plan.interest_rate / 100)
 
     today = now().date()
-    from_date = account.interest_last_applied_on or account.start_date
+    from_date = saving_plan.interest_last_applied_on or saving_plan.start_date
 
     # Nothing to accrue if we've already applied through today.
     if from_date >= today:
-        return account.balance
+        return saving_plan.balance
 
     # Pull all historical rate windows that may overlap the accrual range.
     histories = SavingTypeRateHistory.objects.filter(
-        saving_type=account.saving_type,
+        saving_type=saving_plan.saving_type,
         effective_from__lt=today
     ).order_by("effective_from")
 
@@ -185,22 +185,28 @@ def apply_interest(account: SavingPlan):
 
             days = (seg_end - seg_start).days
             # Simple daily interest, annualized by 365 days.
-            interest += account.balance * (h.interest_rate / Decimal("100")) * (Decimal(days) / Decimal("365"))
+            interest += saving_plan.balance * (h.interest_rate / Decimal("100")) * (Decimal(days) / Decimal("365"))
     else:
         # Backward compatibility when no history rows exist yet.
         days = (today - from_date).days
-        interest += account.balance * (account.interest_rate / Decimal("100")) * (Decimal(days) / Decimal("365"))
+        interest += saving_plan.balance * (saving_plan.interest_rate / Decimal("100")) * (Decimal(days) / Decimal("365"))
 
-    account.balance += interest
-    account.interest_last_applied_on = today
+    saving_plan.balance += interest
+    saving_plan.interest_last_applied_on = today
     # Keep the account snapshot in sync with current saving type display rate.
-    account.interest_rate = account.saving_type.interest_rate
-    account.save(update_fields=["balance", "interest_last_applied_on", "interest_rate"])
-    return account.balance
+    saving_plan.interest_rate = saving_plan.saving_type.interest_rate
+    saving_plan.save(update_fields=["balance", "interest_last_applied_on", "interest_rate"])
+    return saving_plan.balance
 
+def change_saving_type_rate(
+    saving_type: SavingType,
+        new_rate: Decimal,
+        effective_from: date | None = None
+) -> SavingType:
+    """
+        Helper function to safely change rate while preserving history windows.
+    """
 
-def change_saving_type_rate(saving_type: SavingType, new_rate: Decimal, effective_from: date | None = None) -> SavingType:
-    # Helper to safely change rate while preserving history windows.
     effective_from = effective_from or now().date()
 
     with transaction.atomic():
@@ -221,7 +227,7 @@ def change_saving_type_rate(saving_type: SavingType, new_rate: Decimal, effectiv
 
     return saving_type
 
-def close_account(account: SavingPlan):
+def close_saving_plan(account: SavingPlan):
     return account.delete()
 
 def get_statistics(period: str, saving_plan=None, date=None, month=None, year=None):
@@ -262,7 +268,7 @@ def get_statistics(period: str, saving_plan=None, date=None, month=None, year=No
 
     return {
         "label": label,
-        "account_number": saving_plan.account_number if saving_plan else "All",
+        "account_number": saving_plan.plan_id if saving_plan else "All",
         "account_name": (
             saving_plan.customer.full_name
             if saving_plan and getattr(saving_plan, "customer", None)

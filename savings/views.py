@@ -10,16 +10,16 @@ from savings.forms import (
 from savings.models import SavingType, Transaction
 
 from savings.services import (
-    create_account,
-    deposit_to_account,
-    get_account_by_user,
-    withdraw_from_account,
+    create_saving_plan,
+    deposit,
+    get_plans_by_user,
+    withdraw,
     get_statistics,
 )
 
 @customer_required
 def saving_accounts(request):
-    accounts = get_account_by_user(request.user)
+    accounts = get_plans_by_user(request.user)
     saving_types = SavingType.objects.filter(is_active=True).order_by("name")
     transaction_form = TransactionForm(prefix="txn", accounts_qs=accounts)
 
@@ -36,21 +36,18 @@ def saving_accounts(request):
                     action = transaction_form.cleaned_data["action"]
 
                     if action == "create":
-                        create_account(
-                            initial_balance=transaction_form.cleaned_data["initial_balance"],
-                            user=request.user,
-                            saving_type=transaction_form.cleaned_data["saving_type"],
-                        )
+                        create_saving_plan(user=request.user, saving_type=transaction_form.cleaned_data["saving_type"],
+                                           initial_balance=transaction_form.cleaned_data["initial_balance"])
                         messages.success(request, "Saving account created successfully.")
                     elif action == "deposit":
                         account = transaction_form.cleaned_data["account"]
                         amount = transaction_form.cleaned_data["amount"]
-                        deposit_to_account(account, amount)
+                        deposit(account, amount)
                         messages.success(request, "Deposit completed.")
                     else:
                         account = transaction_form.cleaned_data["account"]
                         amount = transaction_form.cleaned_data["amount"]
-                        withdraw_from_account(account, amount)
+                        withdraw(account, amount)
                         messages.success(request, "Withdrawal completed.")
                     return redirect("saving_accounts")
 
@@ -95,7 +92,7 @@ def saving_accounts(request):
 
 @customer_required
 def transactions(request):
-    accounts = request.user.customer.saving_accounts.select_related("saving_type").order_by("account_number")
+    accounts = request.user.customer.saving_accounts.select_related("saving_type").order_by("plan_id")
     selected_account_number = request.GET.get("account", "")
     selected_account = None
     transactions = Transaction.objects.none()
