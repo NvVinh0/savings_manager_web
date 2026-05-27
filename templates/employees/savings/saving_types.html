@@ -195,7 +195,11 @@
         </div>
 
         <div class="button-group">
-            <button type="submit" class="submit-btn">
+            <button
+                type="submit"
+                class="submit-btn"
+                {% if not request.user.employee.can_edit %}disabled{% endif %}
+            >
                 Update Saving Type
             </button>
             <a href="{% url 'manage_saving_accounts' %}" class="cancel-btn">

@@ -31,7 +31,7 @@
             {% endif %}
         </div>
         <div class="sidebar-actions">
-            <a href="{% url 'manage_users' %}">← Back to Users</a>
+            <a href="{% url 'manage_users' %}">Back to Users</a>
         </div>
     </aside>
 
@@ -49,7 +49,9 @@
                 {{ customer_form.as_p }}
 
                 <div class="form-actions">
-                    <button type="submit">Save Customer Information</button>
+                    <button type="submit" {% if not request.user.employee.can_edit %}disabled{% endif %}>
+                        Save Customer Information
+                    </button>
                 </div>
             </form>
         </section>
@@ -84,7 +86,13 @@
                 </div>
 
                 <div class="form-actions">
-                    <button type="submit" name="action" value="remove" class="danger-button">
+                    <button
+                        type="submit"
+                        name="action"
+                        value="remove"
+                        class="danger-button"
+                        {% if not request.user.employee.can_edit %}disabled{% endif %}
+                    >
                         {% if user.is_customer %}
                         Remove Employee Access
                         {% else %}
@@ -92,7 +100,12 @@
                         {% endif %}
                     </button>
 
-                    <button type="submit" name="action" value="save">
+                    <button
+                        type="submit"
+                        name="action"
+                        value="save"
+                        {% if not request.user.employee.can_edit %}disabled{% endif %}
+                    >
                         Save Changes
                     </button>
                 </div>

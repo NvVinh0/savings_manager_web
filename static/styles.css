@@ -148,3 +148,29 @@ main {
 .action-button:hover {
     background: #1d4ed8;
 }
+
+button:disabled,
+.submit-btn:disabled,
+.danger-button:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+    transform: none !important;
+    box-shadow: none !important;
+}
+
+button:disabled:hover,
+.submit-btn:disabled:hover,
+.danger-button:disabled:hover {
+    background: #2563eb;
+}
+
+.danger-button:disabled:hover {
+    background: #dc2626;
+}
+
+.create-button.disabled,
+.action-button.disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+    pointer-events: none;
+}

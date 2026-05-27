@@ -18,7 +18,11 @@
         <p>Manage customer and employee accounts.</p>
     </div>
 
-    <a href="{% url 'user_create' %}" class="create-button">
+    <a
+        href="{% if request.user.employee.can_edit %}{% url 'user_create' %}{% else %}#{% endif %}"
+        class="create-button{% if not request.user.employee.can_edit %} disabled{% endif %}"
+        {% if not request.user.employee.can_edit %}aria-disabled="true" tabindex="-1"{% endif %}
+    >
         Add User
     </a>
 </div>

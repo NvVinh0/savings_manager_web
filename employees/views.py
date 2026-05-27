@@ -183,7 +183,7 @@ def manage_saving_type_detail(request, saving_type_id):
 
     return render(
         request,
-        "employees/savings/edit_saving_type.html",
+        "employees/savings/saving_types.html",
         {
             "form": form,
             "saving_type": saving_type,

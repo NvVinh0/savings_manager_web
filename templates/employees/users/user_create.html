@@ -92,7 +92,9 @@
                 <div class="section-divider"></div>
             </div>
             <div class="form-actions">
-                <button type="submit">Create User</button>
+                <button type="submit" {% if not request.user.employee.can_edit %}disabled{% endif %}>
+                    Create User
+                </button>
             </div>
         </section>
     </div>
