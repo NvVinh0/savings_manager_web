@@ -1,6 +1,6 @@
 from django.shortcuts import render, redirect
-from django.utils.dateparse import parse_date
-from django.utils.timezone import now
+from django.contrib import messages
+from django.db import transaction
 
 from dashboard.decorators import employee_required, employee_write_required
 from dashboard.utils import read_session_errors
@@ -68,7 +68,7 @@ def manage_user_detail(request, user_id):
                         result = remove_employee_access(selected_user)
                         if result == "deleted":
                             request.session["message_success"] = "User deleted successfully."
-                            return redirect(manage_users)
+                            return redirect("manage_users")
                         request.session["message_success"] = "Employee access updated successfully."
                     except ValueError as exc:
                         request.session["employee_form_errors"] = { "__all__": [str(exc)] }
@@ -117,20 +117,13 @@ def user_create(request):
 
 @employee_required
 def manage_reports(request):
-    today = now().date()
-    current_month = today.strftime("%Y-%m")
     selected_report = request.GET.get("report", "cash")
 
-    if selected_report not in {"cash", "plans"}:
-        selected_report = "cash"
-
-    selected_date = parse_date(request.GET.get("date", "")) or today
-    if selected_date > today:
-        selected_date = today
-
-    selected_month = request.GET.get("month") or current_month
-
-    context = build_report_context(selected_report, selected_date, selected_month)
+    context = build_report_context(
+        selected_report,
+        request.GET.get("date", ""),
+        request.GET.get("month", ""),
+    )
     return render(request, "employees/savings/reports.html", context)
 
 @employee_required
@@ -172,12 +165,25 @@ def manage_saving_type_detail(request, saving_type_id):
     if request.method == "POST":
         form = SavingTypeEditForm(request.POST, instance=saving_type)
         if form.is_valid():
+            duration_changed = form.cleaned_data["duration_months"] != saving_type.duration_months
+
+            if duration_changed:
+                with transaction.atomic():
+                    # Keep old product definition for audit/history.
+                    saving_type.is_active = False
+                    saving_type.save(update_fields=["is_active"])
+
+                    new_saving_type = form.save(commit=False)
+                    new_saving_type.pk = None
+                    new_saving_type.save()
+
+                messages.success(request, "Duration changed. Created a new saving type and deactivated the old one.")
+                return redirect("manage_saving_type_detail", saving_type_id=new_saving_type.id)
+
             form.save()
-            # messages.success(request, "Saving type updated successfully.")
-            return redirect("manage_saving_accounts")
-        else:
-            # messages.error(request, "Please check the form for errors.")
-            pass
+            messages.success(request, "Saving type updated successfully.")
+            return redirect("manage_saving_type_detail", saving_type_id=saving_type.id)
+        messages.error(request, "Please check the form for errors.")
     else:
         form = SavingTypeEditForm(instance=saving_type)
 
