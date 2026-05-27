@@ -48,11 +48,13 @@
 
                 {{ customer_form.as_p }}
 
+                {% if not request.user.employee.can_edit %}
                 <div class="form-actions">
-                    <button type="submit" {% if not request.user.employee.can_edit %}disabled{% endif %}>
+                    <button type="submit">
                         Save Customer Information
                     </button>
                 </div>
+                {% endif %}
             </form>
         </section>
         {% endif %}
@@ -85,13 +87,13 @@
                     </div>
                 </div>
 
+                {% if request.user.employee.can_edit %}
                 <div class="form-actions">
                     <button
                         type="submit"
                         name="action"
                         value="remove"
                         class="danger-button"
-                        {% if not request.user.employee.can_edit %}disabled{% endif %}
                     >
                         {% if selected_user.is_customer %}
                         Remove Employee Access
@@ -104,11 +106,11 @@
                         type="submit"
                         name="action"
                         value="save"
-                        {% if not request.user.employee.can_edit %}disabled{% endif %}
                     >
                         Save Changes
                     </button>
                 </div>
+                {% endif %}
             </form>
         </section>
     </div>
