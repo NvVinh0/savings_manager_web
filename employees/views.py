@@ -50,12 +50,12 @@ def manage_transactions(request):
 
 @employee_required
 def manage_user_detail(request, user_id):
-    user = get_user_by_id(user_id)
+    selected_user = get_user_by_id(user_id)
 
     if request.method == "POST":
         match request.POST.get("form_type"):
             case "customer":
-                customer_form = InformationChangeForm(request.POST, instance=user.customer)
+                customer_form = InformationChangeForm(request.POST, instance=selected_user.customer)
                 if customer_form.is_valid():
                     customer_form.save()
                     request.session["message_success"] = "Customer information updated successfully."
@@ -65,7 +65,7 @@ def manage_user_detail(request, user_id):
                 action = request.POST.get("action")
                 if action == "remove":
                     try:
-                        result = remove_employee_access(user)
+                        result = remove_employee_access(selected_user)
                         if result == "deleted":
                             request.session["message_success"] = "User deleted successfully."
                             return redirect(manage_users)
@@ -73,7 +73,7 @@ def manage_user_detail(request, user_id):
                     except ValueError as exc:
                         request.session["employee_form_errors"] = { "__all__": [str(exc)] }
                 else:
-                    employee_form = EmployeeChangeForm(request.POST, user=user)
+                    employee_form = EmployeeChangeForm(request.POST, user=selected_user)
                     if employee_form.is_valid():
                         employee_form.save()
                         request.session["message_success"] = "Employee access updated successfully."
@@ -82,17 +82,17 @@ def manage_user_detail(request, user_id):
 
         return redirect(request.path)
     else:
-        if user.is_customer:
-            customer_form = InformationChangeForm(instance=user.customer)
+        if selected_user.is_customer:
+            customer_form = InformationChangeForm(instance=selected_user.customer)
             read_session_errors(customer_form, request.session, "customer_form_errors")
         else:
             customer_form = None
 
-        employee_form = EmployeeChangeForm(user=user)
+        employee_form = EmployeeChangeForm(user=selected_user)
         read_session_errors(employee_form, request.session, "employee_form_errors")
 
     return render(request, "employees/users/user_detail.html", {
-        "user": user,
+        "selected_user": selected_user,
         "customer_form": customer_form,
         "employee_form": employee_form,
         "message_success": request.session.pop("message_success", None)

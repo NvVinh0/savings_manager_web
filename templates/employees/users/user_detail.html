@@ -16,17 +16,17 @@
 <div class="user-layout">
     <aside class="user-sidebar card">
         <div class="avatar">
-            {{ user.email|first|upper }}
+            {{ selected_user.email|first|upper }}
         </div>
-        <h2>{{ user.email }}</h2>
+        <h2>{{ selected_user.email }}</h2>
         <div class="badges">
-            {% if user.is_customer %}
+            {% if selected_user.is_customer %}
             <span class="badge">Customer</span>
             {% endif %}
 
-            {% if user.is_employee %}
+            {% if selected_user.is_employee %}
             <span class="badge employee">
-                {{ user.employee.get_role_display }}
+                {{ selected_user.employee.get_role_display }}
             </span>
             {% endif %}
         </div>
@@ -93,7 +93,7 @@
                         class="danger-button"
                         {% if not request.user.employee.can_edit %}disabled{% endif %}
                     >
-                        {% if user.is_customer %}
+                        {% if selected_user.is_customer %}
                         Remove Employee Access
                         {% else %}
                         Remove User
