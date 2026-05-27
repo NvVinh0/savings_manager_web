@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'employees/savings.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="saving-detail-layout">
+    <aside class="saving-sidebar card">
+        <h2>#{{ saving_plan.plan_id }}</h2>
+        <div class="sidebar-meta">{{ saving_plan.saving_type.name }}</div>
+
+        <div class="badges">
+            {% if saving_plan.is_active %}
+            <span class="badge active">Active</span>
+            {% else %}
+            <span class="badge inactive">Inactive</span>
+            {% endif %}
+        </div>
+
+        <div class="sidebar-stat">
+            <span>Balance</span>
+            <strong>{{ saving_plan.balance|floatformat:2 }}</strong>
+        </div>
+
+        <div class="sidebar-actions">
+            <a href="{% url 'saving_plans' %}">Back to Saving Plans</a>
+        </div>
+    </aside>
+
+    <div class="saving-detail-content">
+        {% if messages %}
+        {% for message in messages %}
+        <div class="flash {{ message.tags }}">{{ message }}</div>
+        {% endfor %}
+        {% endif %}
+
+        <section class="card">
+            <div class="section-header"><h3>Manage Plan</h3></div>
+            <form method="post" class="search-form">
+                {% csrf_token %}
+                <div class="field-inline">
+                    {{ action_form.action }}
+                </div>
+                <div class="field-inline amount-field">
+                    <label for="{{ action_form.amount.id_for_label }}">Amount</label>
+                    {{ action_form.amount }}
+                </div>
+                <button type="submit" class="action-button compact-button">Submit</button>
+            </form>
+        </section>
+
+        <section class="card">
+            <div class="section-header"><h3>Transactions</h3></div>
+            <table class="transactions-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Type</th>
+                        <th>Amount</th>
+                        <th>Before</th>
+                        <th>After</th>
+                        <th>Time</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for t in transactions %}
+                    <tr>
+                        <td>{{ t.id }}</td>
+                        <td>
+                            <span class="badge {{ t.transaction_type|lower }}">
+                                {{ t.get_transaction_type_display }}
+                            </span>
+                        </td>
+                        <td>
+                            {% if t.transaction_type == "DEPOSIT" or t.transaction_type == "OPEN" %}
+                            <span class="amount-positive">+{{ t.amount|floatformat:2 }}</span>
+                            {% else %}
+                            <span class="amount-negative">-{{ t.amount|floatformat:2 }}</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ t.balance_before }}</td>
+                        <td>{{ t.balance_after }}</td>
+                        <td>{{ t.timestamp|date:"Y-m-d H:i" }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="6" class="empty-state">No transactions.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </section>
+    </div>
+</div>
+{% endblock %}

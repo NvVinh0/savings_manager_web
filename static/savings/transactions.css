@@ -39,14 +39,31 @@
     align-items: center;
 }
 
-.search-form select {
+.search-form select,
+.search-form input[type="number"] {
     flex: 1;
-    min-width: 240px;
+    min-width: 180px;
     padding: 12px 14px;
     border: 1px solid #d1d5db;
     border-radius: 8px;
     background: white;
     font-size: 14px;
+}
+
+.field-inline {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.field-inline label {
+    font-size: 12px;
+    color: #6b7280;
+}
+
+.compact-button {
+    padding: 10px 14px;
+    white-space: nowrap;
 }
 
 .transactions-table {
@@ -116,6 +133,7 @@
     }
 
     .search-form select,
+    .search-form input[type="number"],
     .search-form button,
     .search-form .action-button {
         width: 100%;

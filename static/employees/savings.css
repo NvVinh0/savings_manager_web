@@ -37,7 +37,7 @@
 
 .search-form input {
     flex: 1;
-    min-width: 240px;
+    min-width: 0;
     padding: 12px 14px;
     border: 1px solid #d1d5db;
     border-radius: 10px;
@@ -48,6 +48,22 @@
     outline: none;
     border-color: #2563eb;
     box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+.field-inline {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.field-inline label {
+    font-size: 12px;
+    color: #6b7280;
+}
+
+.compact-button {
+    padding: 10px 14px;
+    white-space: nowrap;
 }
 
 .secondary-button {
@@ -142,6 +158,12 @@
 
 .saving-plans-table .actions {
     text-align: center;
+}
+
+.manage-link {
+    color: #2563eb;
+    text-decoration: underline;
+    font-weight: 600;
 }
 
 .empty-state {

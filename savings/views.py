@@ -1,60 +1,45 @@
 from django.contrib import messages
 from django.shortcuts import redirect, render
+from django.db.models import Q
 
 from dashboard.decorators import customer_required
 from savings.forms import (
-    TransactionForm,
-    ReportForm,
+    CreateSavingPlanForm,
+    SavingPlanActionForm,
 )
 
 from savings.services import (
-    generate_statistics,
+    create_saving_plan,
+    deposit,
     get_active_saving_types,
-    get_customer_transactions_context,
     get_plans_by_user,
-    process_transaction_form,
+    withdraw,
 )
 
 @customer_required
 def saving_plans(request):
     saving_plans = get_plans_by_user(request.user)
-    saving_types = get_active_saving_types()
-    transaction_form = TransactionForm(prefix="txn", saving_plans_qs=saving_plans)
-
-    report_form = ReportForm(saving_plans_qs=saving_plans)
-    statistics = None
+    search = request.GET.get("search", "").strip()
+    if search:
+        saving_plans = saving_plans.filter(
+            Q(plan_id__icontains=search) | Q(saving_type__name__icontains=search)
+        )
+    create_form = CreateSavingPlanForm(prefix="create")
 
     if request.method == "POST":
         form_type = request.POST.get("form_type")
         try:
-            if form_type == "transaction":
-                transaction_form = TransactionForm(request.POST, prefix="txn", saving_plans_qs=saving_plans)
+            if form_type == "create":
+                create_form = CreateSavingPlanForm(request.POST, prefix="create")
 
-                if transaction_form.is_valid():
-                    action = transaction_form.cleaned_data["action"]
-                    process_transaction_form(request.user.customer, transaction_form.cleaned_data)
-
-                    if action == "create":
-                        messages.success(request, "Saving plan created successfully.")
-                    elif action == "deposit":
-                        messages.success(request, "Deposit completed.")
-                    else:
-                        messages.success(request, "Withdrawal completed.")
-                    return redirect("saving_plans")
-
-            elif form_type == "statistics":
-
-                report_form = ReportForm(request.POST, saving_plans_qs=saving_plans)
-
-                if report_form.is_valid():
-
-                    statistics = generate_statistics(
-                        report_form.cleaned_data,
-                        month=request.POST.get("month"),
-                        year=request.POST.get("year"),
+                if create_form.is_valid():
+                    create_saving_plan(
+                        customer=request.user.customer,
+                        saving_type=create_form.cleaned_data["saving_type"],
+                        initial_balance=create_form.cleaned_data["initial_balance"],
                     )
-
-                    messages.success(request, "Report generated successfully.")
+                    messages.success(request, "Saving plan created successfully.")
+                    return redirect("saving_plans")
 
         except ValueError as exc:
             messages.error(request, str(exc))
@@ -64,18 +49,43 @@ def saving_plans(request):
         "savings/saving_plans.html",
         {
             "saving_plans": saving_plans,
-            "saving_types": saving_types,
-            "transaction_form": transaction_form,
-
-            "report_form": report_form,
-            "statistics": statistics,
+            "search": search,
+            "create_form": create_form,
         },
     )
 
 @customer_required
-def transactions(request):
-    context = get_customer_transactions_context(
-        request.user,
-        selected_plan_id=request.GET.get("saving_plan", ""),
+def saving_types(request):
+    return render(
+        request,
+        "savings/saving_types.html",
+        {"saving_types": get_active_saving_types()},
     )
-    return render(request, "savings/transactions.html", context)
+
+@customer_required
+def saving_plan_detail(request, plan_id):
+    saving_plan = get_plans_by_user(request.user).filter(plan_id=plan_id).first()
+    if saving_plan is None:
+        messages.error(request, "Saving plan not found.")
+        return redirect("saving_plans")
+
+    action_form = SavingPlanActionForm(prefix="action")
+    if request.method == "POST":
+        action_form = SavingPlanActionForm(request.POST, prefix="action")
+        if action_form.is_valid():
+            action = action_form.cleaned_data["action"]
+            amount = action_form.cleaned_data["amount"]
+            if action == "deposit":
+                deposit(saving_plan, amount)
+                messages.success(request, "Deposit completed.")
+            else:
+                withdraw(saving_plan, amount)
+                messages.success(request, "Withdrawal completed.")
+            return redirect("saving_plan_detail", plan_id=plan_id)
+
+    transactions = saving_plan.transactions.order_by("-timestamp")
+    return render(request, "savings/saving_plan_detail.html", {
+        "saving_plan": saving_plan,
+        "transactions": transactions,
+        "action_form": action_form,
+    })
