@@ -50,7 +50,7 @@
     box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
 }
 
-.secondary-button {
+.btn-secondary {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -64,16 +64,8 @@
     transition: background 0.15s;
 }
 
-.secondary-button:hover {
+.btn-secondary:hover {
     background: #d1d5db;
-}
-
-.table :is(th, td):nth-child(6) {
-    text-align: center;
-}
-
-.table :is(th, td):nth-child(7) {
-    text-align: right;
 }
 
 .plan-id,

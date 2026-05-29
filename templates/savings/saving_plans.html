@@ -24,7 +24,7 @@
   <form method="get" class="search-form">
     <input type="text" name="search" placeholder="Search by plan ID or saving type..." value="{{ search }}">
     <button type="submit">Search</button>
-    {% if search %}<a href="{% url 'saving_plans' %}" class="secondary-button">Reset</a>{% endif %}
+    {% if search %}<a href="{% url 'saving_plans' %}" class="btn-secondary">Reset</a>{% endif %}
   </form>
 </section>
 
