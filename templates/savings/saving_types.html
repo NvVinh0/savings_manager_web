@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'employees/savings.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>Saving Types</h1>
+    <p>Available saving products.</p>
+  </div>
+</div>
+
+<section class="card">
+  <table class="saving-plans-table">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Interest Rate</th>
+        <th>Duration (months)</th>
+        <th>Flexible</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for st in saving_types %}
+      <tr>
+        <td>{{ st.name }}</td>
+        <td>{{ st.interest_rate|floatformat:2 }}%</td>
+        <td>{{ st.duration_months|default:"Unlimited" }}</td>
+        <td>{% if st.is_flexible %}Yes{% else %}No{% endif %}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="4" class="empty-state">No active saving types.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endblock %}
