@@ -75,12 +75,6 @@
     font-weight: 600;
 }
 
-.empty-state {
-    padding: 40px 0 !important;
-    text-align: center;
-    color: #6b7280;
-}
-
 @media (max-width: 820px) {
     .transaction-page {
         padding-inline: 0;
