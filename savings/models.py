@@ -18,9 +18,6 @@ class SavingType(models.Model):
 
     is_active = models.BooleanField(default=True)
 
-    def __str__(self):
-        return self.name
-
     def save(self, *args, **kwargs):
         # Track old rate so we can append a new history row when rate changes.
         old_rate = None
@@ -62,6 +59,11 @@ class SavingTypeRateHistory(models.Model):
     class Meta:
         ordering = ["effective_from"]
 
+class SavingPlanStatus(models.TextChoices):
+    PENDING = "PENDING", "Pending"
+    ACTIVE = "ACTIVE", "Active"
+    CLOSED = "CLOSED", "Closed"
+
 class SavingPlan(models.Model):
     plan_id = models.CharField(
         primary_key=True,
@@ -71,9 +73,8 @@ class SavingPlan(models.Model):
     )
     balance = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
     created_at = models.DateTimeField(auto_now_add=True)
-    is_pending = models.BooleanField(default=True)
 
-    is_active = models.BooleanField(default=True)
+    status = models.CharField(max_length=10, choices=SavingPlanStatus, default=SavingPlanStatus.PENDING)
     deactivated_at = models.DateTimeField(null=True, blank=True)
 
     interest_rate = models.DecimalField(max_digits=5, decimal_places=4) # snapshot
@@ -96,17 +97,15 @@ class SavingPlan(models.Model):
         self.save()
 
     def update_status(self):
-        if self.is_pending:
-            self.is_pending = False
-            self.save(update_fields=["is_pending"])
+        if self.status == SavingPlanStatus.PENDING:
+            self.status = SavingPlanStatus.ACTIVE
+            self.save(update_fields=["status"])
 
     def soft_delete(self):
-        self.is_active = False
-        self.deactivated_at = timezone.now()
-        self.save(update_fields=["is_active", "deactivated_at"])
-
-    def __str__(self):
-        return f"{self.plan_id} - {self.saving_type.name}"
+        if self.status == SavingPlanStatus.ACTIVE:
+            self.status = SavingPlanStatus.CLOSED
+            self.deactivated_at = timezone.now()
+            self.save(update_fields=["status", "deactivated_at"])
 
 class TransactionType(models.TextChoices):
     OPEN = "OPEN", "Saving Plan Opening"
