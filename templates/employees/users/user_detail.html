@@ -48,7 +48,7 @@
 
                 {{ customer_form.as_p }}
 
-                {% if not request.user.employee.can_edit %}
+                {% if request.user.employee.can_edit %}
                 <div class="form-actions">
                     <button type="submit">
                         Save Customer Information

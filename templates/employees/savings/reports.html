@@ -27,7 +27,7 @@
                 </select>
             </div>
 
-            <div class="form-field">
+            <div class="form-field" id="date-field" {% if selected_report != "cash" %}style="display:none;"{% endif %}>
                 <label for="date">Date</label>
                 <input
                     id="date"
@@ -38,7 +38,7 @@
                 >
             </div>
 
-            <div class="form-field">
+            <div class="form-field" id="month-field" {% if selected_report != "plans" %}style="display:none;"{% endif %}>
                 <label for="month">Month</label>
                 <input
                     id="month"
@@ -107,4 +107,22 @@
         {% endif %}
     </section>
 </div>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const reportSelect = document.getElementById("report");
+    const dateField = document.getElementById("date-field");
+    const monthField = document.getElementById("month-field");
+
+    function toggleFields() {
+        const isCash = reportSelect.value === "cash";
+        dateField.style.display = isCash ? "block" : "none";
+        monthField.style.display = isCash ? "none" : "block";
+    }
+
+    if (reportSelect) {
+        reportSelect.addEventListener("change", toggleFields);
+        toggleFields();
+    }
+});
+</script>
 {% endblock %}

@@ -37,7 +37,7 @@
 
 .search-form input {
     flex: 1;
-    min-width: 240px;
+    min-width: 0;
     padding: 12px 14px;
     border: 1px solid #d1d5db;
     border-radius: 10px;
@@ -50,7 +50,7 @@
     box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
 }
 
-.btn-secondary {
+.secondary-button {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -64,8 +64,16 @@
     transition: background 0.15s;
 }
 
-.btn-secondary:hover {
+.secondary-button:hover {
     background: #d1d5db;
+}
+
+.table :is(th, td):nth-child(6) {
+    text-align: center;
+}
+
+.table :is(th, td):nth-child(7) {
+    text-align: right;
 }
 
 .plan-id,

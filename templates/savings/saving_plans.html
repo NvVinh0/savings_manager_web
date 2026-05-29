@@ -2,11 +2,17 @@
 {% load static %}
 
 {% block extra_css %}
+<link rel="stylesheet" href="{% static 'employees/savings.css' %}">
 <link rel="stylesheet" href="{% static 'savings/savings.css' %}">
 {% endblock %}
 
 {% block content %}
-<h2>Savings Management</h2>
+<div class="page-header">
+  <div>
+    <h1>Your Saving Plans</h1>
+    <p>Manage your plans and view history.</p>
+  </div>
+</div>
 
 {% if messages %}
   {% for message in messages %}
@@ -14,199 +20,33 @@
   {% endfor %}
 {% endif %}
 
+<section class="card">
+  <form method="get" class="search-form">
+    <input type="text" name="search" placeholder="Search by plan ID or saving type..." value="{{ search }}">
+    <button type="submit">Search</button>
+    {% if search %}<a href="{% url 'saving_plans' %}" class="secondary-button">Reset</a>{% endif %}
+  </form>
+</section>
+
 <div class="grid">
   <section class="card">
-    <h3>Transaction</h3>
+    <h3>Create Saving Plan</h3>
     <form method="post">
       {% csrf_token %}
-      <input type="hidden" name="form_type" value="transaction">
-      <div class="field" id="txn-action-field">
-        <label>Action</label>
-        {{ transaction_form.action }}
-      </div>
-      <div class="field" id="txn-plan-field">
-        <label>Saving plan</label>
-        {{ transaction_form.saving_plan }}
-      </div>
-      <div class="field" id="txn-saving-type-field">
+      <input type="hidden" name="form_type" value="create">
+      <div class="field">
         <label>Saving type</label>
-        {{ transaction_form.saving_type }}
+        {{ create_form.saving_type }}
       </div>
-      <div class="field" id="txn-initial-balance-field">
+      <div class="field">
         <label>Initial balance</label>
-        {{ transaction_form.initial_balance }}
+        {{ create_form.initial_balance }}
       </div>
-      <div class="field" id="txn-amount-field">
-        <label>Amount</label>
-        {{ transaction_form.amount }}
-      </div>
-      <button type="submit">Submit</button>
+      <button type="submit">Create</button>
     </form>
   </section>
 
 </div>
-
-<section class="card">
-  <h3>Statistics Report</h3>
-
-  <form method="post">
-    {% csrf_token %}
-    <input type="hidden" name="form_type" value="statistics">
-
-    <!-- PERIOD -->
-    <div class="field">
-      <label>Period</label>
-      {{ report_form.period_type }}
-    </div>
-
-    <div class="field">
-      <label>Saving plan</label>
-      {{ report_form.saving_plan }}
-    </div>
-
-    <!-- DAY -->
-    <div id="day-field" class="field">
-      <label>Date</label>
-      {{ report_form.date }}
-    </div>
-
-    <!-- MONTH -->
-    <div id="month-field" class="field" style="display:none;">
-      <label>Month</label>
-      <input type="month" name="month">
-    </div>
-
-    <!-- YEAR -->
-    <div id="year-field" class="field" style="display:none;">
-      <label>Year</label>
-      <select name="year">
-        <option value="2024">2024</option>
-        <option value="2025">2025</option>
-        <option value="2026">2026</option>
-      </select>
-    </div>
-
-    <button type="submit" class="btn">Generate Report</button>
-  </form>
-
-  {% if statistics %}
-  <div class="report-box">
-
-    <h4 class="report-title">
-      {{ statistics.label }}
-    </h4>
-
-    <div class="report-row">
-      <span>Plan ID:</span>
-      <b>{{ statistics.plan_id }}</b>
-    </div>
-
-    <div class="report-row">
-      <span>Customer:</span>
-      <b>{{ statistics.customer_name }}</b>
-    </div>
-
-    <div class="report-row income">
-      <span>Income:</span>
-      <b>{{ statistics.total_income }}</b>
-    </div>
-
-    <div class="report-row expense">
-      <span>Expense:</span>
-      <b>{{ statistics.total_expense }}</b>
-    </div>
-
-    <div class="report-row total">
-      <span>Difference:</span>
-      <b>{{ statistics.difference }}</b>
-    </div>
-
-  </div>
-  {% endif %}
-</section>
-
-<script>
-document.addEventListener("DOMContentLoaded", function () {
-
-    const period = document.querySelector("select[name='period_type']");
-    const txnAction = document.getElementById("id_txn-action");
-
-    const day = document.getElementById("day-field");
-    const month = document.getElementById("month-field");
-    const year = document.getElementById("year-field");
-    const txnPlan = document.getElementById("txn-plan-field");
-    const txnSavingType = document.getElementById("txn-saving-type-field");
-    const txnInitialBalance = document.getElementById("txn-initial-balance-field");
-    const txnAmount = document.getElementById("txn-amount-field");
-
-    function updateUI() {
-        const value = period.value;
-
-        day.style.display = "none";
-        month.style.display = "none";
-        year.style.display = "none";
-
-        if (value === "day") {
-            day.style.display = "block";
-        }
-        else if (value === "month") {
-            month.style.display = "block";
-        }
-        else if (value === "year") {
-            year.style.display = "block";
-        }
-    }
-
-    period.addEventListener("change", updateUI);
-    updateUI();
-
-    function updateTxnUI() {
-      if (!txnAction) return;
-      const action = txnAction.value;
-      if (action === "create") {
-        txnPlan.style.display = "none";
-        txnAmount.style.display = "none";
-        txnSavingType.style.display = "block";
-        txnInitialBalance.style.display = "block";
-      } else {
-        txnPlan.style.display = "block";
-        txnAmount.style.display = "block";
-        txnSavingType.style.display = "none";
-        txnInitialBalance.style.display = "none";
-      }
-    }
-    if (txnAction) {
-      txnAction.addEventListener("change", updateTxnUI);
-      updateTxnUI();
-    }
-});
-</script>
-
-<section class="card">
-  <h3>Saving Types</h3>
-  <table class="table">
-    <thead>
-      <tr>
-        <th>Name</th>
-        <th>Interest Rate</th>
-        <th>Duration (months)</th>
-        <th>Flexible</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for st in saving_types %}
-      <tr>
-        <td>{{ st.name }}</td>
-        <td>{{ st.interest_rate }}%</td>
-        <td>{{ st.duration_months|default:"Unlimited" }}</td>
-        <td>{% if st.is_flexible %}Yes{% else %}No{% endif %}</td>
-      </tr>
-      {% empty %}
-      <tr><td colspan="4">No active saving types.</td></tr>
-      {% endfor %}
-    </tbody>
-  </table>
-</section>
 
 <section class="card">
   <h3>Your Saving Plans</h3>
@@ -214,23 +54,33 @@ document.addEventListener("DOMContentLoaded", function () {
     <thead>
       <tr>
         <th>Plan ID</th>
-        <th>Type</th>
+        <th>Saving Type</th>
         <th>Balance</th>
+        <th>Status</th>
         <th>Interest</th>
         <th>Maturity</th>
+        <th></th>
       </tr>
     </thead>
     <tbody>
       {% for saving_plan in saving_plans %}
       <tr>
-        <td>{{ saving_plan.plan_id }}</td>
+        <td><span class="plan-id">#{{ saving_plan.plan_id }}</span></td>
         <td>{{ saving_plan.saving_type.name }}</td>
-        <td>{{ saving_plan.balance }}</td>
-        <td>{{ saving_plan.interest_rate }}%</td>
+        <td class="numeric">{{ saving_plan.balance|floatformat:2 }}</td>
+        <td>
+          {% if saving_plan.is_active %}
+          <span class="badge active">Active</span>
+          {% else %}
+          <span class="badge inactive">Inactive</span>
+          {% endif %}
+        </td>
+        <td>{{ saving_plan.interest_rate|floatformat:2 }}%</td>
         <td>{{ saving_plan.maturity_date|default:"-" }}</td>
+        <td class="actions"><a href="{% url 'saving_plan_detail' saving_plan.plan_id %}" class="manage-link">Manage</a></td>
       </tr>
       {% empty %}
-      <tr><td colspan="5">No saving plans yet.</td></tr>
+      <tr><td colspan="7">No saving plans yet.</td></tr>
       {% endfor %}
     </tbody>
   </table>
