@@ -129,10 +129,16 @@ class Transaction(models.Model):
 
     saving_plan = models.ForeignKey(SavingPlan, on_delete=models.PROTECT, related_name='transactions')
 
-    def update_status(self, is_success: bool):
+    def update_status(self, is_success: bool = False):
+        if self.transaction_status == TransactionStatus.CANCELED:
+            return
+
         if self.transaction_status == TransactionStatus.PENDING:
             self.transaction_status = TransactionStatus.SUCCESS if is_success else TransactionStatus.CANCELED
-            self.save()
+        else:
+            self.transaction_status = TransactionStatus.PENDING
+        self.save()
+
 
 class Parameter(models.Model):
     key = models.CharField(max_length=100, unique=True)
