@@ -50,51 +50,6 @@
     font-size: 14px;
 }
 
-.field-inline {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-}
-
-.field-inline label {
-    font-size: 12px;
-    color: #6b7280;
-}
-
-.compact-button {
-    padding: 10px 14px;
-    white-space: nowrap;
-}
-
-.transactions-table {
-    width: 100%;
-    border-collapse: collapse;
-}
-
-.transactions-table th,
-.transactions-table td {
-    padding: 16px 12px;
-    border-bottom: 1px solid #f3f4f6;
-    text-align: left;
-}
-
-.transactions-table th {
-    padding-top: 10px;
-    color: #6b7280;
-    font-size: 14px;
-    font-weight: 600;
-    border-bottom-color: #e5e7eb;
-}
-
-.badge {
-    display: inline-flex;
-    padding: 6px 12px;
-    border-radius: 999px;
-    background: #e5e7eb;
-    font-size: 13px;
-    font-weight: 600;
-}
-
 .badge.open {
     background: #dcfce7;
     color: #15803d;
@@ -119,12 +74,6 @@
 .amount-negative {
     color: #dc2626;
     font-weight: 600;
-}
-
-.empty-state {
-    padding: 40px 0 !important;
-    text-align: center;
-    color: #6b7280;
 }
 
 @media (max-width: 820px) {

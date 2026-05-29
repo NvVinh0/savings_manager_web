@@ -50,39 +50,14 @@
     flex: 1;
 }
 
-.users-table {
-    width: 100%;
-    border-collapse: collapse;
-}
-
-.users-table th,
-.users-table td {
-    padding-block: 16px;
-    border-bottom: 1px solid #f3f4f6;
-}
-
-.users-table th {
-    padding-top: 10px;
-    text-align: left;
-    font-size: 14px;
-    font-weight: 600;
-    color: #6b7280;
-    border-bottom-color: #e5e7eb;
-}
-
-.users-table :is(th, td):nth-child(2),
-.users-table :is(th, td):nth-child(3),
-.users-table :is(th, td):nth-child(4) {
+.table :is(th, td):nth-child(2),
+.table :is(th, td):nth-child(3),
+.table :is(th, td):nth-child(4) {
     text-align: center;
 }
 
-.badge {
-    display: inline-flex;
-    padding: 6px 12px;
-    border-radius: 999px;
-    background: #e5e7eb;
-    font-size: 13px;
-    font-weight: 600;
+.table :is(th, td):nth-child(5) {
+    text-align: right;
 }
 
 .badge.employee {
@@ -92,10 +67,4 @@
 
 .actions {
     text-align: right;
-}
-
-.empty-state {
-    padding: 40px 0 !important;
-    text-align: center;
-    color: #6b7280;
 }

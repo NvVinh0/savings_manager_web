@@ -35,22 +35,6 @@ button:hover {
     background: #34495e;
 }
 
-.saving-plans-table {
-    width: 100%;
-    border-collapse: collapse;
-}
-
-.saving-plans-table th,
-.saving-plans-table td {
-    border: 1px solid #ddd;
-    padding: 8px;
-    text-align: left;
-}
-
-.saving-plans-table th {
-    background: #f5f5f5;
-}
-
 .flash {
     padding: 10px 12px;
     border-radius: 6px;

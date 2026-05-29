@@ -174,3 +174,42 @@ button:disabled:hover,
     cursor: not-allowed;
     pointer-events: none;
 }
+
+.table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.table :is(th, td) {
+    padding: 16px 12px;
+    border-bottom: 1px solid #f3f4f6;
+    text-align: left;
+}
+
+.table th {
+    padding-top: 10px;
+    text-align: left;
+    font-size: 14px;
+    font-weight: 600;
+    color: #6b7280;
+    border-bottom-color: #e5e7eb;
+}
+
+.table-empty {
+    padding: 40px 0 !important;
+    text-align: center !important;
+    color: #6b7280;
+}
+
+.badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6px 12px;
+    border-radius: 999px;
+    background: #e5e7eb;
+    color: #374151;
+    font-size: 13px;
+    font-weight: 600;
+    white-space: nowrap;
+}

@@ -34,7 +34,7 @@
     </section>
 
     <section class="card">
-        <table class="transactions-table">
+        <table class="table">
             <thead>
                 <tr>
                     <th>ID</th>
@@ -50,7 +50,7 @@
             <tbody>
                 {% if selected_plan_id and not selected_plan %}
                 <tr>
-                    <td colspan="7" class="empty-state">
+                    <td colspan="7" class="table-empty">
                         Saving plan not found.
                     </td>
                 </tr>
@@ -81,14 +81,14 @@
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="7" class="empty-state">
+                        <td colspan="7" class="table-empty">
                             No transactions found for this saving plan.
                         </td>
                     </tr>
                     {% endfor %}
                 {% else %}
                 <tr>
-                    <td colspan="7" class="empty-state">
+                    <td colspan="7" class="table-empty">
                         Select a saving plan to view transactions.
                     </td>
                 </tr>

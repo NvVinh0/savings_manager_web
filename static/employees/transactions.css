@@ -63,36 +63,6 @@
     background: #d1d5db;
 }
 
-.transactions-table {
-    width: 100%;
-    border-collapse: collapse;
-}
-
-.transactions-table th,
-.transactions-table td {
-    padding: 16px 12px;
-    border-bottom: 1px solid #f3f4f6;
-    text-align: left;
-}
-
-.transactions-table th {
-    padding-top: 10px;
-    text-align: left;
-    font-size: 14px;
-    font-weight: 600;
-    color: #6b7280;
-    border-bottom-color: #e5e7eb;
-}
-
-.badge {
-    display: inline-flex;
-    padding: 6px 12px;
-    border-radius: 999px;
-    background: #e5e7eb;
-    font-size: 13px;
-    font-weight: 600;
-}
-
 .badge.open {
     background: #dcfce7;
     color: #15803d;
@@ -117,10 +87,4 @@
 .amount-negative {
     color: #dc2626;
     font-weight: 600;
-}
-
-.empty-state {
-    padding: 40px 0 !important;
-    text-align: center;
-    color: #6b7280;
 }
