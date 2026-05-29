@@ -12,11 +12,9 @@
         <div class="sidebar-meta">{{ saving_plan.saving_type.name }}</div>
 
         <div class="badges">
-            {% if saving_plan.is_active %}
-            <span class="badge active">Active</span>
-            {% else %}
-            <span class="badge inactive">Inactive</span>
-            {% endif %}
+            <span class="badge {{ saving_plan.status|lower }}">
+                {{ saving_plan.get_status_display }}
+            </span>
         </div>
 
         <div class="sidebar-stat">
@@ -79,7 +77,13 @@
                 </div>
                 <div class="detail-item">
                     <div class="detail-label">Start Date</div>
-                    <div class="detail-value">{{ saving_plan.start_date|date:"Y-m-d" }}</div>
+                    <div class="detail-value">
+                        {% if saving_plan.status == "PENDING" %}
+                            -
+                        {% else %}
+                            {{ saving_plan.start_date|date:"Y-m-d" }}
+                        {% endif %}
+                    </div>
                 </div>
                 <div class="detail-item">
                     <div class="detail-label">Maturity Date</div>
@@ -97,38 +101,53 @@
                 <h3>Transactions</h3>
             </div>
 
-            <table class="transactions-table">
+            <table class="table">
                 <thead>
                     <tr>
+                        <th>ID</th>
                         <th>Transaction Type</th>
+                        <th>Status</th>
+                        <th>Saving Plan</th>
                         <th>Amount</th>
                         <th>Before</th>
                         <th>After</th>
                         <th>Time</th>
                     </tr>
                 </thead>
+
                 <tbody>
-                    {% for transaction in transactions %}
+                    {% for t in transactions %}
                     <tr>
+                        <td>{{ t.id }}</td>
                         <td>
-                            <span class="badge {{ transaction.transaction_type|lower }}">
-                                {{ transaction.get_transaction_type_display }}
+                            <span class="badge {{ t.transaction_type|lower }}">
+                                {{ t.get_transaction_type_display }}
                             </span>
                         </td>
                         <td>
-                            {% if transaction.transaction_type == "DEPOSIT" or transaction.transaction_type == "OPEN" %}
-                            <span class="amount-positive">+{{ transaction.amount|floatformat:2 }}</span>
+                            <span class="badge {{ t.transaction_status|lower }}">
+                                {{ t.get_transaction_status_display }}
+                            </span>
+                        </td>
+                        <td>#{{ t.saving_plan.plan_id }}</td>
+                        <td>
+                            {% if t.transaction_type == "DEPOSIT" or t.transaction_type == "OPEN" %}
+                                <span class="amount-positive">
+                                    +{{ t.amount|floatformat:2 }}
+                                </span>
                             {% else %}
-                            <span class="amount-negative">-{{ transaction.amount|floatformat:2 }}</span>
+                                <span class="amount-negative">
+                                    -{{ t.amount|floatformat:2 }}
+                                </span>
                             {% endif %}
                         </td>
-                        <td>{{ transaction.balance_before|floatformat:2 }}</td>
-                        <td>{{ transaction.balance_after|floatformat:2 }}</td>
-                        <td>{{ transaction.timestamp|date:"Y-m-d H:i" }}</td>
+                        <td>{{ t.balance_before }}</td>
+                        <td>{{ t.balance_after }}</td>
+                        <td>{{ t.timestamp|date:"Y-m-d H:i" }}</td>
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="5" class="table-empty">
+                        <td colspan="7" class="table-empty">
                             No transactions found.
                         </td>
                     </tr>

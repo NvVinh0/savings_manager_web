@@ -50,7 +50,7 @@
     box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
 }
 
-.secondary-button {
+.btn-secondary {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -64,16 +64,8 @@
     transition: background 0.15s;
 }
 
-.secondary-button:hover {
+.btn-secondary:hover {
     background: #d1d5db;
-}
-
-.table :is(th, td):nth-child(6) {
-    text-align: center;
-}
-
-.table :is(th, td):nth-child(7) {
-    text-align: right;
 }
 
 .plan-id,
@@ -89,25 +81,11 @@
     font-size: 13px;
 }
 
-.badge.active,
-.badge.open,
-.badge.deposit {
-    background: #dcfce7;
-    color: #166534;
-}
-
-.badge.inactive,
-.badge.withdraw,
-.badge.close {
-    background: #fee2e2;
-    color: #b91c1c;
-}
-
 .actions {
     text-align: right;
 }
 
-.saving-plans-table .actions {
+.table.actions {
     text-align: center;
 }
 
@@ -137,6 +115,27 @@
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
+}
+
+.badge.pending {
+    background-color: #fef3c7;
+    color: #92400e;
+}
+
+.badge.active,
+.badge.success,
+.badge.open,
+.badge.deposit {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.badge.closed,
+.badge.canceled,
+.badge.withdraw,
+.badge.close {
+    background: #fee2e2;
+    color: #b91c1c;
 }
 
 .sidebar-stat {
