@@ -78,7 +78,7 @@ class SavingPlan(models.Model):
     deactivated_at = models.DateTimeField(null=True, blank=True)
 
     interest_rate = models.DecimalField(max_digits=5, decimal_places=4) # snapshot
-    start_date = models.DateField(auto_now_add=True) # lazy evaluation
+    start_date = models.DateField(null=True) # lazy evaluation
     maturity_date = models.DateField(null=True, blank=True)  # allow null for non-fixed-term saving plans
     # For flexible saving plans, this tracks the last day we already accrued interest up to.
     interest_last_applied_on = models.DateField(null=True, blank=True)
@@ -99,7 +99,8 @@ class SavingPlan(models.Model):
     def update_status(self):
         if self.status == SavingPlanStatus.PENDING:
             self.status = SavingPlanStatus.ACTIVE
-            self.save(update_fields=["status"])
+            self.start_date = now().date()
+            self.save(update_fields=["status", "start_date"])
 
     def soft_delete(self):
         if self.status == SavingPlanStatus.ACTIVE:
