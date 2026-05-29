@@ -68,32 +68,12 @@
     background: #d1d5db;
 }
 
-.saving-plans-table,
-.transactions-table {
-    width: 100%;
-    border-collapse: collapse;
-}
-
-.saving-plans-table th,
-.saving-plans-table td,
-.transactions-table th,
-.transactions-table td {
-    padding: 16px 12px;
-    border-bottom: 1px solid #f3f4f6;
-    text-align: left;
-}
-
-.saving-plans-table th,
-.transactions-table th {
-    padding-top: 10px;
-    font-size: 14px;
-    font-weight: 600;
-    color: #6b7280;
-    border-bottom-color: #e5e7eb;
-}
-
-.saving-plans-table :is(th, td):nth-child(6) {
+.table :is(th, td):nth-child(6) {
     text-align: center;
+}
+
+.table :is(th, td):nth-child(7) {
+    text-align: right;
 }
 
 .plan-id,
@@ -107,19 +87,6 @@
 .sidebar-meta {
     color: #6b7280;
     font-size: 13px;
-}
-
-.badge {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 6px 12px;
-    border-radius: 999px;
-    background: #e5e7eb;
-    color: #374151;
-    font-size: 13px;
-    font-weight: 600;
-    white-space: nowrap;
 }
 
 .badge.active,
