@@ -262,7 +262,7 @@ def close_saving_plan(saving_plan: SavingPlan):
         Decimal("0.00"),
         Decimal("0.00")
     )
-    saving_plan.delete()
+    saving_plan.soft_delete()
 
 def change_saving_type_rate(
     saving_type: SavingType,

@@ -71,6 +71,8 @@ class SavingPlan(models.Model):
     )
     balance = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
     created_at = models.DateTimeField(auto_now_add=True)
+    is_pending = models.BooleanField(default=True)
+
     is_active = models.BooleanField(default=True)
     deactivated_at = models.DateTimeField(null=True, blank=True)
 
@@ -93,8 +95,12 @@ class SavingPlan(models.Model):
         self.balance -= amount
         self.save()
 
-    def delete(self, *args, **kwargs):
-        # soft delete the saving plan
+    def update_status(self):
+        if self.is_pending:
+            self.is_pending = False
+            self.save(update_fields=["is_pending"])
+
+    def soft_delete(self):
         self.is_active = False
         self.deactivated_at = timezone.now()
         self.save(update_fields=["is_active", "deactivated_at"])
@@ -108,14 +114,25 @@ class TransactionType(models.TextChoices):
     WITHDRAW = "WITHDRAW", "Withdrawal"
     CLOSE = "CLOSE", "Saving Plan Closing"
 
+class TransactionStatus(models.TextChoices):
+    PENDING = "PENDING", "Pending"
+    SUCCESS = "SUCCESS", "Success"
+    CANCELED = "CANCELED", "Canceled"
+
 class Transaction(models.Model):
     transaction_type = models.CharField(max_length=10, choices=TransactionType)
+    transaction_status = models.CharField(max_length=10, choices=TransactionStatus)
     balance_before = models.DecimalField(max_digits=12, decimal_places=2)
     amount = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
     balance_after = models.DecimalField(max_digits=12, decimal_places=2)
     timestamp = models.DateTimeField(auto_now_add=True)
 
     saving_plan = models.ForeignKey(SavingPlan, on_delete=models.PROTECT, related_name='transactions')
+
+    def update_status(self, is_success: bool):
+        if self.transaction_status == TransactionStatus.PENDING:
+            self.transaction_status = TransactionStatus.SUCCESS if is_success else TransactionStatus.CANCELED
+            self.save()
 
 class Parameter(models.Model):
     key = models.CharField(max_length=100, unique=True)
