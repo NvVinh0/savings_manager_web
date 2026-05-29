@@ -39,10 +39,11 @@
                 <tr>
                     <th>ID</th>
                     <th>Transaction Type</th>
+                    <th>Status</th>
                     <th>Saving Plan</th>
                     <th>Amount</th>
-                    <th>Balance Before</th>
-                    <th>Balance After</th>
+                    <th>Before</th>
+                    <th>After</th>
                     <th>Time</th>
                 </tr>
             </thead>
@@ -61,6 +62,11 @@
                         <td>
                             <span class="badge {{ t.transaction_type|lower }}">
                                 {{ t.get_transaction_type_display }}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="badge {{ t.transaction_status|lower }}">
+                                {{ t.get_transaction_status_display }}
                             </span>
                         </td>
                         <td>#{{ t.saving_plan.plan_id }}</td>

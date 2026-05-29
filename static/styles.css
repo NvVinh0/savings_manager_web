@@ -183,12 +183,11 @@ button:disabled:hover,
 .table :is(th, td) {
     padding: 16px 12px;
     border-bottom: 1px solid #f3f4f6;
-    text-align: left;
+    text-align: center;
 }
 
 .table th {
     padding-top: 10px;
-    text-align: left;
     font-size: 14px;
     font-weight: 600;
     color: #6b7280;

@@ -49,7 +49,13 @@
     font-size: 14px;
 }
 
-.badge.open {
+.badge.pending {
+    background-color: #fef3c7;
+    color: #92400e;
+}
+
+.badge.open,
+.badge.success {
     background: #dcfce7;
     color: #15803d;
 }
