@@ -147,7 +147,7 @@ def manage_saving_plan_detail(request, plan_id):
 
     return render(
         request,
-        "employees/savings/saving_detail.html",
+        "employees/savings/saving_plan_detail.html",
         {
             "saving_plan": saving_plan,
             "transactions": transactions,

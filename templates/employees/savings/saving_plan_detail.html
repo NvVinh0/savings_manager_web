@@ -3,11 +3,12 @@
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'savings/savings.css' %}">
+<link rel="stylesheet" href="{% static 'savings/saving_detail.css' %}">
 {% endblock %}
 
 {% block content %}
-<div class="saving-detail-layout">
-    <aside class="saving-sidebar card">
+<div class="container">
+    <aside class="sidebar card">
         <h2>#{{ saving_plan.plan_id }}</h2>
         <div class="sidebar-meta">{{ saving_plan.saving_type.name }}</div>
 
@@ -27,7 +28,7 @@
         </div>
     </aside>
 
-    <div class="saving-detail-content">
+    <div class="content">
         <section class="card">
             <div class="section-header">
                 <h3>Customer Information</h3>
@@ -64,10 +65,6 @@
 
             <div class="detail-grid">
                 <div class="detail-item">
-                    <div class="detail-label">Plan ID</div>
-                    <div class="detail-value">#{{ saving_plan.plan_id }}</div>
-                </div>
-                <div class="detail-item">
                     <div class="detail-label">Saving Type</div>
                     <div class="detail-value">{{ saving_plan.saving_type.name }}</div>
                 </div>
@@ -87,7 +84,7 @@
                 </div>
                 <div class="detail-item">
                     <div class="detail-label">Maturity Date</div>
-                    <div class="detail-value">{{ saving_plan.maturity_date|date:"Y-m-d"|default:"Unlimited" }}</div>
+                    <div class="detail-value">{{ saving_plan.maturity_date|date:"Y-m-d"|default:"None" }}</div>
                 </div>
                 <div class="detail-item">
                     <div class="detail-label">Created</div>
