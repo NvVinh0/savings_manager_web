@@ -4,16 +4,24 @@ from django import forms
 
 from savings.models import SavingPlan, SavingType
 
+class SavingPlanCreateForm(forms.Form):
+    saving_type = forms.ModelChoiceField(queryset=SavingType.objects.none(), required=True)
+    initial_balance = forms.DecimalField(max_digits=12, decimal_places=2, min_value=Decimal("0"), required=True)
 
-class CreateSavingPlanForm(forms.Form):
-    saving_type = forms.ModelChoiceField(queryset=SavingType.objects.filter(is_active=True), required=False)
-    initial_balance = forms.DecimalField(max_digits=12, decimal_places=2, min_value=Decimal("0"), required=False)
+    def __init__(self, *args, active_saving_types=None, min_initial_deposit=None, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        if active_saving_types is not None:
+            self.fields["saving_type"].queryset = active_saving_types
+
+        if min_initial_deposit is not None:
+            self.fields["initial_balance"].initial = min_initial_deposit
 
     def clean(self):
         cleaned_data = super().clean()
         if not cleaned_data.get("saving_type"):
             self.add_error("saving_type", "This field is required.")
-        if cleaned_data.get("initial_balance") is None:
+        if not cleaned_data.get("initial_balance"):
             self.add_error("initial_balance", "This field is required.")
         return cleaned_data
 

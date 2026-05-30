@@ -29,12 +29,6 @@
     </aside>
 
     <div class="content">
-        {% if messages %}
-        {% for message in messages %}
-        <div class="flash {{ message.tags }}">{{ message }}</div>
-        {% endfor %}
-        {% endif %}
-
         <section class="card">
             <div class="section-header"><h3>Deposit / Withdraw</h3></div>
             <form method="post" class="search-form">

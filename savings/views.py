@@ -1,10 +1,13 @@
-from django.contrib import messages
+from decimal import Decimal
+
+from django.http import Http404
 from django.shortcuts import redirect, render
 from django.db.models import Q
 
 from dashboard.decorators import customer_required
+from dashboard.utils import get_parameter
 from savings.forms import (
-    CreateSavingPlanForm,
+    SavingPlanCreateForm,
     SavingPlanActionForm,
 )
 
@@ -13,7 +16,7 @@ from savings.services import (
     deposit,
     get_active_saving_types,
     get_plans_by_user,
-    withdraw,
+    withdraw, get_plan_by_id,
 )
 
 @customer_required
@@ -22,27 +25,9 @@ def saving_plans(request):
     search = request.GET.get("search", "").strip()
     if search:
         saving_plans = saving_plans.filter(
-            Q(plan_id__icontains=search) | Q(saving_type__name__icontains=search)
+            Q(plan_id__icontains=search)
+            | Q(saving_type__name__icontains=search)
         )
-    create_form = CreateSavingPlanForm(prefix="create")
-
-    if request.method == "POST":
-        form_type = request.POST.get("form_type")
-        try:
-            if form_type == "create":
-                create_form = CreateSavingPlanForm(request.POST, prefix="create")
-
-                if create_form.is_valid():
-                    create_saving_plan(
-                        customer=request.user.customer,
-                        saving_type=create_form.cleaned_data["saving_type"],
-                        initial_balance=create_form.cleaned_data["initial_balance"],
-                    )
-                    messages.success(request, "Saving plan created successfully.")
-                    return redirect("saving_plans")
-
-        except ValueError as exc:
-            messages.error(request, str(exc))
 
     return render(
         request,
@@ -50,24 +35,15 @@ def saving_plans(request):
         {
             "saving_plans": saving_plans,
             "search": search,
-            "create_form": create_form,
         },
     )
 
-@customer_required
-def saving_types(request):
-    return render(
-        request,
-        "savings/saving_types.html",
-        {"saving_types": get_active_saving_types()},
-    )
-
+# TODO: Add success message handler
 @customer_required
 def saving_plan_detail(request, plan_id):
-    saving_plan = get_plans_by_user(request.user).filter(plan_id=plan_id).first()
+    saving_plan = get_plan_by_id(plan_id)
     if saving_plan is None:
-        messages.error(request, "Saving plan not found.")
-        return redirect("saving_plans")
+        return Http404("Saving plan not found")
 
     action_form = SavingPlanActionForm(prefix="action")
     if request.method == "POST":
@@ -77,11 +53,10 @@ def saving_plan_detail(request, plan_id):
             amount = action_form.cleaned_data["amount"]
             if action == "deposit":
                 deposit(saving_plan, amount)
-                messages.success(request, "Deposit completed.")
             else:
                 withdraw(saving_plan, amount)
-                messages.success(request, "Withdrawal completed.")
-            return redirect("saving_plan_detail", plan_id=plan_id)
+
+        return redirect("saving_plan_detail", plan_id=plan_id)
 
     transactions = saving_plan.transactions.order_by("-timestamp")
     return render(request, "savings/saving_plan_detail.html", {
@@ -90,5 +65,28 @@ def saving_plan_detail(request, plan_id):
         "action_form": action_form,
     })
 
+# TODO: Add success message handler
+@customer_required
 def saving_plan_create(request):
-    return None
+    saving_types = get_active_saving_types()
+    min_initial_deposit = Decimal(get_parameter("min_initial_deposit", 1_000_000))
+
+    if request.method == "POST":
+        form = SavingPlanCreateForm(request.POST,
+                                    active_saving_types=saving_types, min_initial_deposit=min_initial_deposit)
+        if form.is_valid():
+            create_saving_plan(
+                customer=request.user.customer,
+                saving_type=form.cleaned_data["saving_type"],
+                initial_balance=form.cleaned_data["initial_balance"],
+            )
+            return redirect("saving_plans")
+    else:
+        form = SavingPlanCreateForm(active_saving_types=saving_types, min_initial_deposit=min_initial_deposit)
+
+    return render(request,"savings/saving_plan_create.html", {
+            "saving_types": saving_types,
+            "min_initial_deposit": min_initial_deposit,
+            "customer": request.user.customer,
+            "form": form,
+        })

@@ -50,16 +50,6 @@
     flex: 1;
 }
 
-.table :is(th, td):nth-child(2),
-.table :is(th, td):nth-child(3),
-.table :is(th, td):nth-child(4) {
-    text-align: center;
-}
-
-.table :is(th, td):nth-child(5) {
-    text-align: right;
-}
-
 .badge.employee {
     background: #dbeafe;
     color: #1d4ed8;

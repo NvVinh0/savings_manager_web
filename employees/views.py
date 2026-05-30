@@ -1,5 +1,4 @@
 from django.shortcuts import render, redirect
-from django.contrib import messages
 from django.db import transaction
 
 from dashboard.decorators import employee_required, employee_write_required
@@ -17,7 +16,7 @@ from .services import (
     remove_employee_access,
     search_saving_plans,
     search_transactions,
-    search_users,
+    search_users, get_saving_types,
 )
 
 @employee_required
@@ -156,9 +155,12 @@ def manage_saving_plan_detail(request, plan_id):
 
 @employee_required
 def manage_saving_types(request):
-    pass
+    return render(request, "employees/savings/saving_types.html", {
+        "saving_types": get_saving_types(),
+    })
 
-@employee_required
+# TODO: Add success message handler
+@employee_write_required
 def manage_saving_type_detail(request, saving_type_id):
     saving_type = get_saving_type_by_id(saving_type_id)
 
@@ -177,19 +179,16 @@ def manage_saving_type_detail(request, saving_type_id):
                     new_saving_type.pk = None
                     new_saving_type.save()
 
-                messages.success(request, "Duration changed. Created a new saving type and deactivated the old one.")
                 return redirect("manage_saving_type_detail", saving_type_id=new_saving_type.id)
 
             form.save()
-            messages.success(request, "Saving type updated successfully.")
             return redirect("manage_saving_type_detail", saving_type_id=saving_type.id)
-        messages.error(request, "Please check the form for errors.")
     else:
         form = SavingTypeEditForm(instance=saving_type)
 
     return render(
         request,
-        "employees/savings/saving_types.html",
+        "employees/savings/saving_type_detail.html",
         {
             "form": form,
             "saving_type": saving_type,
