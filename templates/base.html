@@ -15,7 +15,6 @@
             <a href="{% url 'profile' %}" class="app-name">Saving Plan Manager</a>
             {% if user.is_authenticated %}
             <a href="{% url 'saving_plans' %}" class="nav-button">Savings</a>
-            <a href="{% url 'saving_types' %}" class="nav-button">Saving Types</a>
             {% endif %}
         </div>
 

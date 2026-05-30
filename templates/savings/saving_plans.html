@@ -2,88 +2,79 @@
 {% load static %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'employees/savings.css' %}">
 <link rel="stylesheet" href="{% static 'savings/savings.css' %}">
 {% endblock %}
 
 {% block content %}
-<div class="page-header">
-  <div>
-    <h1>Your Saving Plans</h1>
-    <p>Manage your plans and view history.</p>
-  </div>
-</div>
 
-{% if messages %}
-  {% for message in messages %}
-    <div class="flash {{ message.tags }}">{{ message }}</div>
+{% if success_messages %}
+  {% for message in success_messages %}
+    <div class="message success">{{ message }}</div>
   {% endfor %}
 {% endif %}
 
-<section class="card">
-  <form method="get" class="search-form">
-    <input type="text" name="search" placeholder="Search by plan ID or saving type..." value="{{ search }}">
-    <button type="submit">Search</button>
-    {% if search %}<a href="{% url 'saving_plans' %}" class="btn-secondary">Reset</a>{% endif %}
-  </form>
-</section>
-
-<div class="grid">
-  <section class="card">
-    <h3>Create Saving Plan</h3>
-    <form method="post">
-      {% csrf_token %}
-      <input type="hidden" name="form_type" value="create">
-      <div class="field">
-        <label>Saving type</label>
-        {{ create_form.saving_type }}
-      </div>
-      <div class="field">
-        <label>Initial balance</label>
-        {{ create_form.initial_balance }}
-      </div>
-      <button type="submit">Create</button>
-    </form>
-  </section>
-
+<div class="page-header">
+    <div>
+        <h1>Your Saving Plans</h1>
+        <p>Manage your plans and view history.</p>
+    </div>
+    <a href="{% url 'saving_plan_create' %}" class="create-button">New Saving Plan</a>
 </div>
 
 <section class="card">
-  <h3>Your Saving Plans</h3>
-  <table class="table">
-    <thead>
-      <tr>
-        <th>Plan ID</th>
-        <th>Saving Type</th>
-        <th>Balance</th>
-        <th>Status</th>
-        <th>Interest</th>
-        <th>Maturity</th>
-        <th></th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for saving_plan in saving_plans %}
-      <tr>
-        <td><span class="plan-id">#{{ saving_plan.plan_id }}</span></td>
-        <td>{{ saving_plan.saving_type.name }}</td>
-        <td class="numeric">{{ saving_plan.balance|floatformat:2 }}</td>
-        <td>
-          {% if saving_plan.is_active %}
-          <span class="badge active">Active</span>
-          {% else %}
-          <span class="badge inactive">Inactive</span>
-          {% endif %}
-        </td>
-        <td>{{ saving_plan.interest_rate|floatformat:2 }}%</td>
-        <td>{{ saving_plan.maturity_date|default:"-" }}</td>
-        <td class="actions"><a href="{% url 'saving_plan_detail' saving_plan.plan_id %}" class="manage-link">Manage</a></td>
-      </tr>
-      {% empty %}
-      <tr><td colspan="7">No saving plans yet.</td></tr>
-      {% endfor %}
-    </tbody>
-  </table>
+    <form method="get" class="search-form">
+        <input
+            type="text"
+            name="search"
+            placeholder="Search by plan ID, citizen ID, email, or saving type..."
+            value="{{ search }}"
+        >
+        <button type="submit">Search</button>
+        {% if search %}
+        <a href="{% url 'manage_saving_plans' %}" class="btn-secondary">Reset</a>
+        {% endif %}
+    </form>
+</section>
+
+<section class="card">
+    <table class="table">
+        <thead>
+        <tr>
+            <th>Plan ID</th>
+            <th>Saving Type</th>
+            <th>Balance</th>
+            <th>Interest Rate</th>
+            <th>Maturity Date</th>
+            <th>Status</th>
+            <th></th>
+        </tr>
+        </thead>
+        <tbody>
+            {% for plan in saving_plans %}
+            <tr>
+                <td>
+                    <span class="plan-id">#{{ plan.plan_id }}</span>
+                </td>
+                <td>{{ plan.saving_type.name }}</td>
+                <td class="numeric">{{ plan.balance|floatformat:2 }}</td>
+                <td>{{ plan.interest_rate|floatformat:2 }}%</td>
+                <td>{{ plan.maturity_date|default:"-" }}</td>
+                <td>
+                    <span class="badge {{ plan.status|lower }}">
+                        {{ plan.get_status_display }}
+                    </span>
+                </td>
+                <td class="actions">
+                    <a href="{% url 'saving_plan_detail' plan.plan_id %}" class="action-button">
+                        View
+                    </a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="7">No saving plans yet.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
 </section>
 
 {% endblock %}

@@ -133,7 +133,7 @@ def manage_saving_plans(request):
 
     return render(
         request,
-        "employees/savings/savings.html",
+        "employees/savings/saving_plans.html",
         {
             "saving_plans": saving_plans,
             "search": search,

@@ -89,3 +89,6 @@ def saving_plan_detail(request, plan_id):
         "transactions": transactions,
         "action_form": action_form,
     })
+
+def saving_plan_create(request):
+    return None
