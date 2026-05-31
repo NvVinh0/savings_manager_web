@@ -95,7 +95,7 @@ def get_saving_plan_transactions(saving_plan):
     )
 
 def get_saving_types():
-    return SavingType.objects.order_by("-created_at")
+    return SavingType.objects.order_by("name")
 
 def get_saving_type_detail(saving_type_id):
     return get_object_or_404(SavingType, pk=saving_type_id)

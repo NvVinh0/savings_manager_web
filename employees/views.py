@@ -183,6 +183,19 @@ def manage_saving_type_detail(request, saving_type_id):
         },
     )
 
+@employee_write_required
+def saving_type_create(request):
+    if request.method == "POST":
+        form = SavingTypeEditForm(request.POST)
+        if form.is_valid():
+            form.save()
+            return redirect("manage_saving_types")
+    else:
+        form = SavingTypeEditForm()
+    return render(request, "employees/savings/saving_type_detail.html", {
+        "form": form,
+    })
+
 @employee_required
 def manage_transactions(request):
     transactions = search_transactions(

@@ -1,99 +1,77 @@
-.form-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 20px;
-}
-
-.form-grid input,
-.form-grid select {
+.detail-item input,
+.detail-item select,
+.detail-item textarea {
     width: 100%;
     padding: 12px 14px;
-    border: 1px solid #dcdfe4;
-    border-radius: 12px;
-    outline: none;
-    transition: 0.2s;
+    border: 1px solid #d1d5db;
+    border-radius: 10px;
+    font-size: 14px;
+    background: white;
 }
 
-.form-grid input:focus,
-.form-grid select:focus {
-    border-color: #3498db;
-    box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.15);
+.detail-item input:focus,
+.detail-item select:focus,
+.detail-item textarea:focus {
+    outline: none;
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
 }
 
 .form-check {
-    margin-top: 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 16px;
+}
+
+.form-check:last-child {
+    margin-bottom: 0;
+}
+
+.form-check input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    margin: 0;
 }
 
 .form-check-label {
-    cursor: pointer;
+    font-size: 14px;
     font-weight: 500;
+    color: #111827;
 }
 
 .button-group {
     display: flex;
     gap: 12px;
-    margin-top: 24px;
-}
-
-.submit-btn {
-    padding: 12px 24px;
-    border: none;
-    border-radius: 12px;
-    background: linear-gradient(135deg, #3498db, #5dade2);
-    color: white;
-    font-weight: 700;
-    cursor: pointer;
-    transition: 0.2s;
-}
-
-.submit-btn:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 5px 14px rgba(52, 152, 219, 0.25);
+    margin-top: 32px;
 }
 
 .cancel-btn {
-    padding: 12px 24px;
-    border: 1px solid #dcdfe4;
-    border-radius: 12px;
-    background: white;
-    color: #5f6b7a;
-    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 16px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none;
     cursor: pointer;
-    transition: 0.2s;
+    transition: background 0.15s ease;
+    background: #e5e7eb;
+    color: #374151;
 }
 
 .cancel-btn:hover {
-    background: #f5f5f5;
+    background: #d1d5db;
 }
 
-.error-message {
-    color: #b91c1c;
-    margin-top: 4px;
-    font-size: 13px;
-}
-
-.messages {
-    margin-bottom: 16px;
-}
-
-.message {
-    padding: 12px 14px;
-    border-radius: 10px;
-    margin-bottom: 8px;
-    font-weight: 600;
-}
-
-.message.error {
-    background: #fef2f2;
-    color: #b91c1c;
-    border: 1px solid #fecaca;
-}
-
-@media (max-width: 768px) {
-    .form-grid {
+@media (max-width: 900px) {
+    .detail-grid {
         grid-template-columns: 1fr;
     }
+}
 
+@media (max-width: 640px) {
     .button-group {
         flex-direction: column;
     }
