@@ -122,8 +122,8 @@
                             </span>
                         </td>
                         <td>
-                            <span class="badge {{ t.transaction_status|lower }}">
-                                {{ t.get_transaction_status_display }}
+                            <span class="badge {{ t.status|lower }}">
+                                {{ t.get_status_display }}
                             </span>
                         </td>
                         <td>#{{ t.saving_plan.plan_id }}</td>
