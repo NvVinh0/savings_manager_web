@@ -3,20 +3,20 @@ from django.db import transaction
 
 from dashboard.decorators import employee_required, employee_write_required
 from dashboard.utils import read_session_errors
-from savings.models import TransactionType
+from savings.models import TransactionType, TransactionStatus
 from users.forms import InformationChangeForm
 from .forms import EmployeeChangeForm, UserCreateForm, SavingTypeEditForm
 from .services import (
     build_report_context,
     get_dashboard_reports,
-    get_saving_plan_by_id,
+    get_saving_plan_detail,
     get_saving_plan_transactions,
-    get_saving_type_by_id,
-    get_user_by_id,
+    get_saving_type_detail,
+    get_user_detail,
     remove_employee_access,
     search_saving_plans,
     search_transactions,
-    search_users, get_saving_types,
+    search_users, get_saving_types, get_transaction_detail,
 )
 
 @employee_required
@@ -36,20 +36,8 @@ def manage_users(request):
     })
 
 @employee_required
-def manage_transactions(request):
-    transactions = search_transactions(
-        query=request.GET.get("search", ""),
-        transaction_type=request.GET.get("type", ""),
-    )
-
-    return render(request, "employees/savings/transactions.html", {
-        "transactions": transactions,
-        "transaction_types": TransactionType.choices,
-    })
-
-@employee_required
 def manage_user_detail(request, user_id):
-    selected_user = get_user_by_id(user_id)
+    selected_user = get_user_detail(user_id)
 
     if request.method == "POST":
         match request.POST.get("form_type"):
@@ -141,7 +129,7 @@ def manage_saving_plans(request):
 
 @employee_required
 def manage_saving_plan_detail(request, plan_id):
-    saving_plan = get_saving_plan_by_id(plan_id)
+    saving_plan = get_saving_plan_detail(plan_id)
     transactions = get_saving_plan_transactions(saving_plan)
 
     return render(
@@ -162,7 +150,7 @@ def manage_saving_types(request):
 # TODO: Add success message handler
 @employee_write_required
 def manage_saving_type_detail(request, saving_type_id):
-    saving_type = get_saving_type_by_id(saving_type_id)
+    saving_type = get_saving_type_detail(saving_type_id)
 
     if request.method == "POST":
         form = SavingTypeEditForm(request.POST, instance=saving_type)
@@ -195,3 +183,26 @@ def manage_saving_type_detail(request, saving_type_id):
         },
     )
 
+@employee_required
+def manage_transactions(request):
+    transactions = search_transactions(
+        query=request.GET.get("search", ""),
+        transaction_type=request.GET.get("type", ""),
+        transaction_status=request.GET.get("status", ""),
+    )
+
+    return render(request, "employees/savings/transactions.html", {
+        "transactions": transactions,
+        "transaction_types": TransactionType.choices,
+        "transaction_status": TransactionStatus.choices,
+    })
+
+@employee_write_required
+def manage_transaction_detail(request, transaction_id):
+    return render(
+        request,
+        "employees/savings/transaction_detail.html",
+        {
+            "transaction": get_transaction_detail(transaction_id),
+        }
+    )

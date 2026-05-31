@@ -1,0 +1,105 @@
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+}
+
+.form-grid input,
+.form-grid select {
+    width: 100%;
+    padding: 12px 14px;
+    border: 1px solid #dcdfe4;
+    border-radius: 12px;
+    outline: none;
+    transition: 0.2s;
+}
+
+.form-grid input:focus,
+.form-grid select:focus {
+    border-color: #3498db;
+    box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.15);
+}
+
+.form-check {
+    margin-top: 12px;
+}
+
+.form-check-label {
+    cursor: pointer;
+    font-weight: 500;
+}
+
+.button-group {
+    display: flex;
+    gap: 12px;
+    margin-top: 24px;
+}
+
+.submit-btn {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #3498db, #5dade2);
+    color: white;
+    font-weight: 700;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.submit-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 5px 14px rgba(52, 152, 219, 0.25);
+}
+
+.cancel-btn {
+    padding: 12px 24px;
+    border: 1px solid #dcdfe4;
+    border-radius: 12px;
+    background: white;
+    color: #5f6b7a;
+    font-weight: 700;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.cancel-btn:hover {
+    background: #f5f5f5;
+}
+
+.error-message {
+    color: #b91c1c;
+    margin-top: 4px;
+    font-size: 13px;
+}
+
+.messages {
+    margin-bottom: 16px;
+}
+
+.message {
+    padding: 12px 14px;
+    border-radius: 10px;
+    margin-bottom: 8px;
+    font-weight: 600;
+}
+
+.message.error {
+    background: #fef2f2;
+    color: #b91c1c;
+    border: 1px solid #fecaca;
+}
+
+@media (max-width: 768px) {
+    .form-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .button-group {
+        flex-direction: column;
+    }
+
+    .submit-btn,
+    .cancel-btn {
+        width: 100%;
+    }
+}
