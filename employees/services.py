@@ -48,7 +48,7 @@ def search_users(query="", user_type=""):
 
     return users
 
-def get_user_by_id(user_id):
+def get_user_detail(user_id):
     return get_object_or_404(CustomUser, id=user_id)
 
 def remove_employee_access(user):
@@ -81,7 +81,7 @@ def search_saving_plans(query=""):
 
     return saving_plans
 
-def get_saving_plan_by_id(plan_id):
+def get_saving_plan_detail(plan_id):
     return get_object_or_404(
         SavingPlan.objects.select_related("saving_type", "customer", "customer__user"),
         plan_id=plan_id,
@@ -97,10 +97,22 @@ def get_saving_plan_transactions(saving_plan):
 def get_saving_types():
     return SavingType.objects.order_by("-created_at")
 
-def get_saving_type_by_id(saving_type_id):
+def get_saving_type_detail(saving_type_id):
     return get_object_or_404(SavingType, pk=saving_type_id)
 
-def search_transactions(query="", transaction_type=""):
+def get_transaction_detail(transaction_id):
+    return get_object_or_404(
+        Transaction.objects
+        .select_related(
+            "saving_plan",
+            "saving_plan__saving_type",
+            "saving_plan__customer",
+            "saving_plan__customer__user",
+        ),
+        pk=transaction_id
+    )
+
+def search_transactions(query="", transaction_type="", transaction_status=""):
     transactions = Transaction.objects.select_related("saving_plan", "saving_plan__saving_type").order_by("-timestamp")
     query = query.strip()
 
@@ -112,6 +124,8 @@ def search_transactions(query="", transaction_type=""):
 
     if transaction_type:
         transactions = transactions.filter(transaction_type=transaction_type)
+    if transaction_status:
+        transactions = transactions.filter(transaction_status=transaction_status)
 
     return transactions
 
