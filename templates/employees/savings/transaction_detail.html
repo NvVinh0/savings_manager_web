@@ -34,30 +34,30 @@
         </div>
 
         <div class="sidebar-actions">
-            {% if transaction.transaction_status == "PENDING" and transaction.transaction_type != "CLOSE" %}
-                <form method="post">
-                    {% csrf_token %}
-                    <button
-                        type="submit"
-                        name="action"
-                        value="approve"
-                        class="btn-approve"
-                    >
-                        Approve
-                    </button>
-                </form>
+            {% if transaction.status == "PENDING" %}
+            <form method="post">
+                {% csrf_token %}
+                <button
+                    type="submit"
+                    name="action"
+                    value="approve"
+                    class="btn-approve"
+                >
+                    Approve
+                </button>
+            </form>
 
-                <form method="post">
-                    {% csrf_token %}
-                    <button
-                        type="submit"
-                        name="action"
-                        value="cancel"
-                        class="btn-cancel"
-                    >
-                        Cancel
-                    </button>
-                </form>
+            <form method="post">
+                {% csrf_token %}
+                <button
+                    type="submit"
+                    name="action"
+                    value="cancel"
+                    class="btn-cancel"
+                >
+                    Cancel
+                </button>
+            </form>
             {% endif %}
             <a href="{% url 'manage_transactions' %}">
                 Back to Transactions
