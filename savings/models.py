@@ -74,7 +74,7 @@ class SavingPlan(models.Model):
     balance = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
     created_at = models.DateTimeField(auto_now_add=True)
 
-    status = models.CharField(max_length=10, choices=SavingPlanStatus, default=SavingPlanStatus.PENDING)
+    status = models.CharField(max_length=10, choices=SavingPlanStatus.choices, default=SavingPlanStatus.PENDING)
     deactivated_at = models.DateTimeField(null=True, blank=True)
 
     interest_rate = models.DecimalField(max_digits=5, decimal_places=4) # snapshot
@@ -121,7 +121,7 @@ class TransactionStatus(models.TextChoices):
 
 class Transaction(models.Model):
     transaction_type = models.CharField(max_length=10, choices=TransactionType)
-    status = models.CharField(max_length=10, choices=TransactionStatus)
+    status = models.CharField(max_length=10, choices=SavingPlanStatus.choices, default=SavingPlanStatus.PENDING,)
     balance_before = models.DecimalField(max_digits=12, decimal_places=2)
     amount = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
     balance_after = models.DecimalField(max_digits=12, decimal_places=2)
