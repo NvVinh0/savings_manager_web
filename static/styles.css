@@ -112,6 +112,12 @@ main {
     border: 1px solid #b7ebc6;
 }
 
+.message.error {
+    background-color: #fff1f0;
+    color: #c62828;
+    border: 1px solid #f5c2c0;
+}
+
 .errorlist {
     color: #e74c3c;
     font-size: 12px;

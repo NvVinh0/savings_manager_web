@@ -1,8 +1,9 @@
+from django.http import HttpResponseBadRequest, HttpResponseServerError
 from django.shortcuts import render, redirect
 from django.db import transaction
 
 from dashboard.decorators import employee_required, employee_write_required
-from dashboard.utils import read_session_errors
+from dashboard.flash import flash_success
 from savings.models import TransactionType, TransactionStatus
 from users.forms import InformationChangeForm
 from .forms import EmployeeChangeForm, UserCreateForm, SavingTypeEditForm
@@ -32,12 +33,17 @@ def manage_users(request):
 
     return render(request, "employees/users/users.html", {
         "users": users,
-        "message_success": request.session.pop("message_success", None)
     })
 
 @employee_required
 def manage_user_detail(request, user_id):
     selected_user = get_user_detail(user_id)
+    if selected_user.is_customer:
+        customer_form = InformationChangeForm(instance=selected_user.customer)
+    else:
+        customer_form = None
+
+    employee_form = EmployeeChangeForm(user=selected_user)
 
     if request.method == "POST":
         match request.POST.get("form_type"):
@@ -45,101 +51,84 @@ def manage_user_detail(request, user_id):
                 customer_form = InformationChangeForm(request.POST, instance=selected_user.customer)
                 if customer_form.is_valid():
                     customer_form.save()
-                    request.session["message_success"] = "Customer information updated successfully."
-                else:
-                    request.session["customer_form_errors"] = customer_form.errors
+
+                    flash_success(request, "Customer information updated successfully.")
+                    return redirect(request.path)
             case "employee":
                 action = request.POST.get("action")
                 if action == "remove":
                     try:
                         result = remove_employee_access(selected_user)
                         if result == "deleted":
-                            request.session["message_success"] = "User deleted successfully."
+                            flash_success(request, "User deleted successfully.")
                             return redirect("manage_users")
-                        request.session["message_success"] = "Employee access updated successfully."
+
+                        flash_success(request, "Employee access updated successfully.")
+                        return redirect(request.path)
                     except ValueError as exc:
-                        request.session["employee_form_errors"] = { "__all__": [str(exc)] }
+                        return HttpResponseBadRequest(str(exc))
                 else:
                     employee_form = EmployeeChangeForm(request.POST, user=selected_user)
                     if employee_form.is_valid():
                         employee_form.save()
-                        request.session["message_success"] = "Employee access updated successfully."
-                    else:
-                        request.session["employee_form_errors"] = employee_form.errors
 
-        return redirect(request.path)
-    else:
-        if selected_user.is_customer:
-            customer_form = InformationChangeForm(instance=selected_user.customer)
-            read_session_errors(customer_form, request.session, "customer_form_errors")
-        else:
-            customer_form = None
-
-        employee_form = EmployeeChangeForm(user=selected_user)
-        read_session_errors(employee_form, request.session, "employee_form_errors")
+                        flash_success(request, "Employee access updated successfully.")
+                        return redirect(request.path)
 
     return render(request, "employees/users/user_detail.html", {
         "selected_user": selected_user,
         "customer_form": customer_form,
         "employee_form": employee_form,
-        "message_success": request.session.pop("message_success", None)
     })
 
 @employee_write_required
 def user_create(request):
+    form = UserCreateForm()
     if request.method == "POST":
         form = UserCreateForm(request.POST)
         if form.is_valid():
             form.save()
-            request.session["message_success"] = "Successfully created user."
-        else:
-            request.session["form_errors"] = form.errors
 
-        return redirect(manage_users)
-    else:
-        form = UserCreateForm()
-        read_session_errors(form, request.session, "form_errors")
+            flash_success(request, "Successfully created user.")
+            return redirect("manage_users")
 
     return render(request, "employees/users/user_create.html", { "form": form })
 
 @employee_required
 def manage_reports(request):
-    selected_report = request.GET.get("report", "cash")
+    try:
+        selected_report = request.GET.get("report", "cash")
 
-    context = build_report_context(
-        selected_report,
-        request.GET.get("date", ""),
-        request.GET.get("month", ""),
-    )
-    return render(request, "employees/savings/reports.html", context)
+        context = build_report_context(
+            selected_report,
+            request.GET.get("date", ""),
+            request.GET.get("month", ""),
+        )
+        return render(request, "employees/savings/reports.html", context)
+    except Exception as e:
+        # there aren't any errors on this page that's not a server error
+        # user input barely affects the logic, so we can't return any 4xx code
+        return HttpResponseServerError(str(e))
 
 @employee_required
 def manage_saving_plans(request):
     search = request.GET.get("search", "").strip()
     saving_plans = search_saving_plans(search)
 
-    return render(
-        request,
-        "employees/savings/saving_plans.html",
-        {
-            "saving_plans": saving_plans,
-            "search": search,
-        },
-    )
+    return render(request,"employees/savings/saving_plans.html", {
+        "saving_plans": saving_plans,
+        "search": search,
+    })
 
 @employee_required
 def manage_saving_plan_detail(request, plan_id):
     saving_plan = get_saving_plan_detail(plan_id)
     transactions = get_saving_plan_transactions(saving_plan)
 
-    return render(
-        request,
-        "employees/savings/saving_plan_detail.html",
-        {
-            "saving_plan": saving_plan,
-            "transactions": transactions,
-        },
-    )
+    return render(request,"employees/savings/saving_plan_detail.html",{
+        "saving_plan": saving_plan,
+        "transactions": transactions,
+    })
 
 @employee_required
 def manage_saving_types(request):
@@ -147,16 +136,15 @@ def manage_saving_types(request):
         "saving_types": get_saving_types(),
     })
 
-# TODO: Add success message handler
 @employee_write_required
 def manage_saving_type_detail(request, saving_type_id):
     saving_type = get_saving_type_detail(saving_type_id)
+    form = SavingTypeEditForm(instance=saving_type)
 
     if request.method == "POST":
         form = SavingTypeEditForm(request.POST, instance=saving_type)
         if form.is_valid():
             duration_changed = form.cleaned_data["duration_months"] != saving_type.duration_months
-
             if duration_changed:
                 with transaction.atomic():
                     # Keep old product definition for audit/history.
@@ -167,31 +155,30 @@ def manage_saving_type_detail(request, saving_type_id):
                     new_saving_type.pk = None
                     new_saving_type.save()
 
+                flash_success(request, "Saving type updated successfully.")
                 return redirect("manage_saving_type_detail", saving_type_id=new_saving_type.id)
 
             form.save()
-            return redirect("manage_saving_type_detail", saving_type_id=saving_type.id)
-    else:
-        form = SavingTypeEditForm(instance=saving_type)
 
-    return render(
-        request,
-        "employees/savings/saving_type_detail.html",
-        {
-            "form": form,
-            "saving_type": saving_type,
-        },
-    )
+            flash_success(request, "Saving type updated successfully.")
+            return redirect("manage_saving_type_detail", saving_type_id=saving_type.id)
+
+    return render(request,"employees/savings/saving_type_detail.html",{
+        "form": form,
+        "saving_type": saving_type,
+    })
 
 @employee_write_required
 def saving_type_create(request):
+    form = SavingTypeEditForm()
+
     if request.method == "POST":
         form = SavingTypeEditForm(request.POST)
         if form.is_valid():
             form.save()
+            flash_success(request, "Saving type created successfully.")
             return redirect("manage_saving_types")
-    else:
-        form = SavingTypeEditForm()
+
     return render(request, "employees/savings/saving_type_detail.html", {
         "form": form,
     })
@@ -210,12 +197,9 @@ def manage_transactions(request):
         "transaction_status": TransactionStatus.choices,
     })
 
+# TODO: Handle success/error message
 @employee_write_required
 def manage_transaction_detail(request, transaction_id):
-    return render(
-        request,
-        "employees/savings/transaction_detail.html",
-        {
-            "transaction": get_transaction_detail(transaction_id),
-        }
-    )
+    return render(request,"employees/savings/transaction_detail.html",{
+        "transaction": get_transaction_detail(transaction_id),
+    })

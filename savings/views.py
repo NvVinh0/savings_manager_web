@@ -5,6 +5,7 @@ from django.shortcuts import redirect, render
 from django.db.models import Q
 
 from dashboard.decorators import customer_required
+from dashboard.flash import flash_success
 from dashboard.utils import get_parameter
 from savings.forms import (
     SavingPlanCreateForm,
@@ -29,16 +30,11 @@ def saving_plans(request):
             | Q(saving_type__name__icontains=search)
         )
 
-    return render(
-        request,
-        "savings/saving_plans.html",
-        {
-            "saving_plans": saving_plans,
-            "search": search,
-        },
-    )
+    return render(request,"savings/saving_plans.html",{
+        "saving_plans": saving_plans,
+        "search": search,
+    })
 
-# TODO: Add success message handler
 @customer_required
 def saving_plan_detail(request, plan_id):
     saving_plan = get_plan_by_id(plan_id)
@@ -46,6 +42,7 @@ def saving_plan_detail(request, plan_id):
         return Http404("Saving plan not found")
 
     action_form = SavingPlanActionForm(prefix="action")
+
     if request.method == "POST":
         action_form = SavingPlanActionForm(request.POST, prefix="action")
         if action_form.is_valid():
@@ -53,10 +50,12 @@ def saving_plan_detail(request, plan_id):
             amount = action_form.cleaned_data["amount"]
             if action == "deposit":
                 deposit(saving_plan, amount)
+                flash_success(request, f"Created request to deposit {amount}")
             else:
                 withdraw(saving_plan, amount)
+                flash_success(request, f"Created request to withdraw {amount}")
 
-        return redirect("saving_plan_detail", plan_id=plan_id)
+            return redirect("saving_plan_detail", plan_id=plan_id)
 
     transactions = saving_plan.transactions.order_by("-timestamp")
     return render(request, "savings/saving_plan_detail.html", {
@@ -65,11 +64,11 @@ def saving_plan_detail(request, plan_id):
         "action_form": action_form,
     })
 
-# TODO: Add success message handler
 @customer_required
 def saving_plan_create(request):
     saving_types = get_active_saving_types()
     min_initial_deposit = Decimal(get_parameter("min_initial_deposit", 1_000_000))
+    form = SavingPlanCreateForm(active_saving_types=saving_types, min_initial_deposit=min_initial_deposit)
 
     if request.method == "POST":
         form = SavingPlanCreateForm(request.POST,
@@ -80,13 +79,13 @@ def saving_plan_create(request):
                 saving_type=form.cleaned_data["saving_type"],
                 initial_balance=form.cleaned_data["initial_balance"],
             )
+
+            flash_success(request, "Created request to open new saving plan.")
             return redirect("saving_plans")
-    else:
-        form = SavingPlanCreateForm(active_saving_types=saving_types, min_initial_deposit=min_initial_deposit)
 
     return render(request,"savings/saving_plan_create.html", {
-            "saving_types": saving_types,
-            "min_initial_deposit": min_initial_deposit,
-            "customer": request.user.customer,
-            "form": form,
-        })
+        "form": form,
+        "saving_types": saving_types,
+        "min_initial_deposit": min_initial_deposit,
+        "customer": request.user.customer,
+    })

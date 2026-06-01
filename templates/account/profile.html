@@ -7,9 +7,11 @@
 
 {% block content %}
 
-{% if message_success %}
+{% if flash %}
 <div class="messages">
-    <div class="message success">{{ message_success }}</div>
+    <div class="message {{ flash.level }}">
+        {{ flash.text }}
+    </div>
 </div>
 {% endif %}
 
