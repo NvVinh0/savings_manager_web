@@ -1,4 +1,5 @@
 from django.db import models
+from django.db import IntegrityError
 from django.utils import timezone
 from django.utils.timezone import now
 import secrets
@@ -6,6 +7,7 @@ from decimal import Decimal
 
 from django.core.exceptions import ValidationError
 from django.core.validators import MaxLengthValidator, MinValueValidator
+from django.db.models import Q
 
 from users.models import Customer
 
@@ -15,10 +17,7 @@ def generate_plan_id():
 
 
 class SavingType(models.Model):
-    name = models.CharField(
-        max_length=50,
-        validators=[MaxLengthValidator(50)],
-    )
+    name = models.CharField(max_length=50)
     duration_months = models.IntegerField(
         null=True,
         blank=True,
@@ -72,6 +71,17 @@ class SavingType(models.Model):
                 effective_to=None,
             )
 
+    class Meta:
+        constraints = [
+            models.CheckConstraint(
+                name="savingtype_duration_matches_flexibility",
+                check=(
+                    (Q(is_flexible=True) & Q(duration_months__isnull=True))
+                    | (Q(is_flexible=False) & Q(duration_months__isnull=False))
+                ),
+            ),
+        ]
+
 class SavingTypeRateHistory(models.Model):
     # Keep a timeline of rates so flexible saving plans can calculate past periods correctly.
     saving_type = models.ForeignKey(SavingType, on_delete=models.CASCADE, related_name="rate_history")
@@ -114,7 +124,7 @@ class SavingPlan(models.Model):
         decimal_places=4,
         validators=[MinValueValidator(Decimal("0.0001"))],
     ) # snapshot
-    start_date = models.DateField(null=True) # lazy evaluation
+    start_date = models.DateField(null=True, blank=True) # lazy evaluation
     maturity_date = models.DateField(null=True, blank=True)  # allow null for non-fixed-term saving plans
     # For flexible saving plans, this tracks the last day we already accrued interest up to.
     interest_last_applied_on = models.DateField(null=True, blank=True)
@@ -123,26 +133,53 @@ class SavingPlan(models.Model):
     customer = models.ForeignKey(Customer, null=True, on_delete=models.SET_NULL, related_name='saving_plans')
 
     def deposit(self, amount):
+        if amount <= 0:
+            raise ValueError("Deposit amount must be greater than 0")
         self.__class__.objects.filter(pk=self.pk).update(balance=models.F("balance") + amount)
         self.refresh_from_db(fields=["balance"])
 
     def withdraw(self, amount):
+        if amount <= 0:
+            raise ValueError("Withdrawal amount must be greater than 0")
         updated = self.__class__.objects.filter(pk=self.pk, balance__gte=amount).update(balance=models.F("balance") - amount)
         if updated == 0:
             raise ValueError("Insufficient balance")
         self.refresh_from_db(fields=["balance"])
 
     def update_status(self):
-        if self.status == SavingPlanStatus.PENDING:
-            self.status = SavingPlanStatus.ACTIVE
-            self.start_date = now().date()
-            self.save(update_fields=["status", "start_date"])
+        if self.status != SavingPlanStatus.PENDING:
+            raise ValidationError("Only pending saving plans can be activated.")
+
+        self.status = SavingPlanStatus.ACTIVE
+        self.start_date = now().date()
+        self.save(update_fields=["status", "start_date"])
 
     def soft_delete(self):
         if self.status == SavingPlanStatus.ACTIVE:
             self.status = SavingPlanStatus.CLOSED
             self.deactivated_at = timezone.now()
             self.save(update_fields=["status", "deactivated_at"])
+
+    def save(self, *args, **kwargs):
+        if not self.pk:
+            self.pk = generate_plan_id()
+
+        for attempt in range(5):
+            try:
+                self.full_clean()
+                return super().save(*args, **kwargs)
+            except IntegrityError:
+                if not self._state.adding or attempt == 4:
+                    raise
+                self.pk = generate_plan_id()
+
+    class Meta:
+        constraints = [
+            models.CheckConstraint(
+                name="savingplan_balance_nonnegative",
+                condition=Q(balance__gte=0),
+            ),
+        ]
 
 class TransactionType(models.TextChoices):
     OPEN = "OPEN", "Saving Plan Opening"
@@ -156,7 +193,7 @@ class TransactionStatus(models.TextChoices):
     CANCELED = "CANCELED", "Canceled"
 
 class Transaction(models.Model):
-    transaction_type = models.CharField(max_length=10, choices=TransactionType)
+    transaction_type = models.CharField(max_length=10, choices=TransactionType.choices)
     status = models.CharField(max_length=10, choices=TransactionStatus.choices, default=TransactionStatus.PENDING,)
     balance_before = models.DecimalField(
         max_digits=12,
@@ -180,10 +217,25 @@ class Transaction(models.Model):
 
     def update_status(self, is_success: bool = False):
         if self.status != TransactionStatus.PENDING:
-            return
+            raise ValidationError("Only pending transactions can be updated.")
 
         self.status = TransactionStatus.SUCCESS if is_success else TransactionStatus.CANCELED
         self.save(update_fields=["status"])
+
+    class Meta:
+        constraints = [
+            models.CheckConstraint(
+                name="transaction_amount_positive_for_deposit_withdraw",
+                condition=(
+                    Q(transaction_type__in=[TransactionType.DEPOSIT, TransactionType.WITHDRAW], amount__gt=0)
+                    | Q(transaction_type__in=[TransactionType.OPEN, TransactionType.CLOSE], amount__gte=0)
+                ),
+            ),
+            models.CheckConstraint(
+                name="transaction_balances_nonnegative",
+                condition=Q(balance_before__gte=0) & Q(balance_after__gte=0),
+            ),
+        ]
 
 
 class Parameter(models.Model):
