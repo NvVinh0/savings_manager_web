@@ -1,7 +1,7 @@
 from django.db import transaction
 from decimal import Decimal
 from datetime import date
-from django.db.models import Sum
+from django.db.models import F, Sum
 
 from dashboard.utils import get_parameter
 from django.db.models import QuerySet
@@ -397,12 +397,17 @@ def approve_transaction(txn: Transaction) -> Transaction:
             if saving_plan.status != SavingPlanStatus.PENDING:
                 return txn
 
-            saving_plan.balance = txn.amount
             saving_plan.status = SavingPlanStatus.ACTIVE
             saving_plan.start_date = today
             if saving_plan.saving_type.is_flexible:
                 saving_plan.interest_last_applied_on = today
-            saving_plan.save(update_fields=["balance", "status", "start_date", "interest_last_applied_on"])
+            SavingPlan.objects.filter(pk=saving_plan.pk).update(
+                balance=txn.amount,
+                status=SavingPlanStatus.ACTIVE,
+                start_date=today,
+                interest_last_applied_on=today if saving_plan.saving_type.is_flexible else None,
+            )
+            saving_plan.refresh_from_db(fields=["balance", "status", "start_date", "interest_last_applied_on"])
 
             balance_before = Decimal("0.00")
             balance_after = txn.amount
@@ -415,8 +420,8 @@ def approve_transaction(txn: Transaction) -> Transaction:
             balance_before = saving_plan.balance
             balance_after = balance_before + txn.amount
 
-            saving_plan.balance = balance_after
-            saving_plan.save(update_fields=["balance"])
+            SavingPlan.objects.filter(pk=saving_plan.pk).update(balance=F("balance") + txn.amount)
+            saving_plan.refresh_from_db(fields=["balance"])
 
         elif txn.transaction_type == TransactionType.WITHDRAW:
             if saving_plan.saving_type.is_flexible:
@@ -434,8 +439,8 @@ def approve_transaction(txn: Transaction) -> Transaction:
                     raise ValueError("Insufficient balance")
 
                 balance_after = balance_before - txn.amount
-                saving_plan.balance = balance_after
-                saving_plan.save(update_fields=["balance"])
+                SavingPlan.objects.filter(pk=saving_plan.pk).update(balance=F("balance") - txn.amount)
+                saving_plan.refresh_from_db(fields=["balance"])
 
                 if balance_after == 0:
                     close_saving_plan(saving_plan)
@@ -449,8 +454,8 @@ def approve_transaction(txn: Transaction) -> Transaction:
                 balance_before = apply_interest(saving_plan)
                 balance_after = Decimal("0.00")
 
-                saving_plan.balance = balance_after
-                saving_plan.save(update_fields=["balance"])
+                SavingPlan.objects.filter(pk=saving_plan.pk).update(balance=Decimal("0.00"))
+                saving_plan.refresh_from_db(fields=["balance"])
                 close_saving_plan(saving_plan)
 
         else:

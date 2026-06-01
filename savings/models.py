@@ -1,24 +1,47 @@
 from django.db import models
 from django.utils import timezone
 from django.utils.timezone import now
-import random
+import secrets
+from decimal import Decimal
+
+from django.core.exceptions import ValidationError
+from django.core.validators import MaxLengthValidator, MinValueValidator
 
 from users.models import Customer
 
 def generate_plan_id():
     """Generates a random 10-digit saving plan ID."""
-    return "".join([str(random.randint(0, 9)) for _ in range(10)])
+    return "".join(secrets.choice("0123456789") for _ in range(10))
 
 
 class SavingType(models.Model):
-    name = models.CharField(max_length=50)
-    duration_months = models.IntegerField(null=True, blank=True)  # 3, 6, 12
-    interest_rate = models.DecimalField(max_digits=5, decimal_places=4) # 0.05, 0.1, 0.15
+    name = models.CharField(
+        max_length=50,
+        validators=[MaxLengthValidator(50)],
+    )
+    duration_months = models.IntegerField(
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(1)],
+    )  # 3, 6, 12
+    interest_rate = models.DecimalField(
+        max_digits=5,
+        decimal_places=4,
+        validators=[MinValueValidator(Decimal("0.0001"))],
+    )  # 0.05, 0.1, 0.15
     is_flexible = models.BooleanField(default=False)
 
     is_active = models.BooleanField(default=True)
 
+    def clean(self):
+        super().clean()
+        if not self.is_flexible and self.duration_months is None:
+            raise ValidationError({"duration_months": "Fixed-term saving types must have a duration in months."})
+        if self.is_flexible and self.duration_months is not None:
+            raise ValidationError({"duration_months": "Flexible saving types should not set a fixed duration."})
+
     def save(self, *args, **kwargs):
+        self.full_clean()
         # Track old rate so we can append a new history row when rate changes.
         old_rate = None
         if self.pk:
@@ -52,7 +75,11 @@ class SavingType(models.Model):
 class SavingTypeRateHistory(models.Model):
     # Keep a timeline of rates so flexible saving plans can calculate past periods correctly.
     saving_type = models.ForeignKey(SavingType, on_delete=models.CASCADE, related_name="rate_history")
-    interest_rate = models.DecimalField(max_digits=5, decimal_places=4)
+    interest_rate = models.DecimalField(
+        max_digits=5,
+        decimal_places=4,
+        validators=[MinValueValidator(Decimal("0.0001"))],
+    )
     effective_from = models.DateField()
     effective_to = models.DateField(null=True, blank=True)  # null means "still active"
 
@@ -71,13 +98,22 @@ class SavingPlan(models.Model):
         default=generate_plan_id,
         editable=False
     )
-    balance = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
+    balance = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=Decimal("0.00"),
+        validators=[MinValueValidator(Decimal("0.00"))],
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     status = models.CharField(max_length=10, choices=SavingPlanStatus.choices, default=SavingPlanStatus.PENDING)
     deactivated_at = models.DateTimeField(null=True, blank=True)
 
-    interest_rate = models.DecimalField(max_digits=5, decimal_places=4) # snapshot
+    interest_rate = models.DecimalField(
+        max_digits=5,
+        decimal_places=4,
+        validators=[MinValueValidator(Decimal("0.0001"))],
+    ) # snapshot
     start_date = models.DateField(null=True) # lazy evaluation
     maturity_date = models.DateField(null=True, blank=True)  # allow null for non-fixed-term saving plans
     # For flexible saving plans, this tracks the last day we already accrued interest up to.
@@ -87,14 +123,14 @@ class SavingPlan(models.Model):
     customer = models.ForeignKey(Customer, null=True, on_delete=models.SET_NULL, related_name='saving_plans')
 
     def deposit(self, amount):
-        self.balance += amount
-        self.save()
+        self.__class__.objects.filter(pk=self.pk).update(balance=models.F("balance") + amount)
+        self.refresh_from_db(fields=["balance"])
 
     def withdraw(self, amount):
-        if amount > self.balance:
+        updated = self.__class__.objects.filter(pk=self.pk, balance__gte=amount).update(balance=models.F("balance") - amount)
+        if updated == 0:
             raise ValueError("Insufficient balance")
-        self.balance -= amount
-        self.save()
+        self.refresh_from_db(fields=["balance"])
 
     def update_status(self):
         if self.status == SavingPlanStatus.PENDING:
@@ -121,23 +157,33 @@ class TransactionStatus(models.TextChoices):
 
 class Transaction(models.Model):
     transaction_type = models.CharField(max_length=10, choices=TransactionType)
-    status = models.CharField(max_length=10, choices=SavingPlanStatus.choices, default=SavingPlanStatus.PENDING,)
-    balance_before = models.DecimalField(max_digits=12, decimal_places=2)
-    amount = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
-    balance_after = models.DecimalField(max_digits=12, decimal_places=2)
+    status = models.CharField(max_length=10, choices=TransactionStatus.choices, default=TransactionStatus.PENDING,)
+    balance_before = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        validators=[MinValueValidator(Decimal("0.00"))],
+    )
+    amount = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=Decimal("0.00"),
+        validators=[MinValueValidator(Decimal("0.00"))],
+    )
+    balance_after = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        validators=[MinValueValidator(Decimal("0.00"))],
+    )
     timestamp = models.DateTimeField(auto_now_add=True)
 
     saving_plan = models.ForeignKey(SavingPlan, on_delete=models.PROTECT, related_name='transactions')
 
     def update_status(self, is_success: bool = False):
-        if self.status == TransactionStatus.CANCELED:
+        if self.status != TransactionStatus.PENDING:
             return
 
-        if self.status == TransactionStatus.PENDING:
-            self.status = TransactionStatus.SUCCESS if is_success else TransactionStatus.CANCELED
-        else:
-            self.status = TransactionStatus.PENDING
-        self.save()
+        self.status = TransactionStatus.SUCCESS if is_success else TransactionStatus.CANCELED
+        self.save(update_fields=["status"])
 
 
 class Parameter(models.Model):
