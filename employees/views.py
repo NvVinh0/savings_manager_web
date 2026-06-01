@@ -17,7 +17,7 @@ from .services import (
     remove_employee_access,
     search_saving_plans,
     search_transactions,
-    search_users, get_saving_types, get_transaction_detail,
+    search_users, get_saving_types, get_transaction_detail, process_transaction,
 )
 
 @employee_required
@@ -200,6 +200,21 @@ def manage_transactions(request):
 # TODO: Handle success/error message
 @employee_write_required
 def manage_transaction_detail(request, transaction_id):
+    selected_transaction = get_transaction_detail(transaction_id)
+
+    if request.method == "POST":
+        action = request.POST.get("action")
+        match action:
+            case "approve":
+                process_transaction(selected_transaction, TransactionStatus.SUCCESS)
+                flash_success(request, "Transaction approved successfully.")
+
+            case "cancel":
+                process_transaction(selected_transaction, TransactionStatus.CANCELED)
+                flash_success(request, "Transaction cancelled successfully.")
+
+        return redirect("transaction_detail", transaction_id=selected_transaction.id)
+
     return render(request,"employees/savings/transaction_detail.html",{
-        "transaction": get_transaction_detail(transaction_id),
+        "transaction": selected_transaction,
     })

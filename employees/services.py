@@ -3,7 +3,7 @@ from django.shortcuts import get_object_or_404
 from django.utils.dateparse import parse_date
 from django.utils.timezone import now
 
-from savings.models import SavingPlan, SavingType, Transaction
+from savings.models import SavingPlan, SavingType, Transaction, TransactionStatus
 from savings.services import get_statistics
 from users.models import CustomUser
 
@@ -128,6 +128,9 @@ def search_transactions(query="", transaction_type="", transaction_status=""):
         transactions = transactions.filter(transaction_status=transaction_status)
 
     return transactions
+
+def process_transaction(transaction: Transaction, new_status: TransactionStatus):
+    pass
 
 def build_report_context(report_type, date_value, month_value):
     today = now().date()
